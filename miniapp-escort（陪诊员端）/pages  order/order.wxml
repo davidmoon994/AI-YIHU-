@@ -1,0 +1,72 @@
+<view class="page">
+
+  <!-- Tab切换 -->
+  <view class="tab-bar">
+    <view class="tab-item {{activeTab === 'waiting' ? 'active' : ''}}" bindtap="switchTab" data-tab="waiting">
+      待接订单 ({{waitingOrders.length}})
+    </view>
+    <view class="tab-item {{activeTab === 'current' ? 'active' : ''}}" bindtap="switchTab" data-tab="current">
+      进行中 ({{currentOrders.length}})
+    </view>
+  </view>
+
+  <!-- 待接订单列表 -->
+  <view wx:if="{{activeTab === 'waiting'}}">
+    <block wx:if="{{waitingOrders.length > 0}}">
+      <view class="order-card" wx:for="{{waitingOrders}}" wx:key="id">
+        <view class="order-top">
+          <view>
+            <text class="hospital">{{item.hospital_name || '未指定医院'}}</text>
+            <text class="service-type">{{item.service_type === 'escort' ? '陪诊' : item.service_type === 'register' ? '代挂号' : item.service_type === 'pickup' ? '接送' : item.service_type}}</text>
+          </view>
+          <text class="amount">¥{{item.payable_amount}}</text>
+        </view>
+        <view class="order-detail-row">
+          <text>📍 {{item.service_address || '待确认'}}</text>
+        </view>
+        <view class="order-detail-row">
+          <text>🕐 {{item.appointment_time || '待定'}}</text>
+        </view>
+        <view class="order-detail-row">
+          <text>👤 {{item.patient_name || ''}} {{item.patient_phone || ''}}</text>
+        </view>
+        <view class="order-actions">
+          <button class="btn-reject" bindtap="rejectOrder" data-recordid="{{item.dispatchRecordId}}">拒绝</button>
+          <button class="btn-accept" bindtap="acceptOrder" data-id="{{item.id}}" data-recordid="{{item.dispatchRecordId}}">接单</button>
+        </view>
+      </view>
+    </block>
+    <view class="empty" wx:else>
+      <text>暂无待接订单</text>
+      <text class="empty-sub">保持在线状态，系统会自动推送订单</text>
+    </view>
+  </view>
+
+  <!-- 进行中订单列表 -->
+  <view wx:if="{{activeTab === 'current'}}">
+    <block wx:if="{{currentOrders.length > 0}}">
+      <view class="order-card" wx:for="{{currentOrders}}" wx:key="id">
+        <view class="order-top">
+          <text class="hospital">{{item.hospital_name || '未指定医院'}}</text>
+          <text class="status-tag">{{item.order_status}}</text>
+        </view>
+        <view class="order-detail-row">
+          <text>📍 {{item.service_address || '待确认'}}</text>
+        </view>
+        <view class="order-detail-row">
+          <text>🕐 {{item.appointment_time || '待定'}}</text>
+        </view>
+        <view class="order-detail-row">
+          <text>👤 {{item.patient_name || ''}}</text>
+        </view>
+        <view class="order-detail-row">
+          <text>📋 订单号：{{item.order_no}}</text>
+        </view>
+      </view>
+    </block>
+    <view class="empty" wx:else>
+      <text>暂无进行中的订单</text>
+    </view>
+  </view>
+
+</view>

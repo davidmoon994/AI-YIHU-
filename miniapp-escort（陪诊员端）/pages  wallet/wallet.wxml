@@ -1,0 +1,45 @@
+<view class="page">
+
+  <!-- 总收入卡片 -->
+  <view class="income-card">
+    <text class="income-label">累计总收入</text>
+    <text class="income-amount">¥{{totalIncome}}</text>
+    <view class="income-meta">
+      <text>累计完成 {{orderCount}} 单</text>
+    </view>
+  </view>
+
+  <!-- 筛选区间 -->
+  <view class="filter-card">
+    <text class="filter-title">收入查询</text>
+    <view class="filter-row">
+      <picker mode="date" value="{{startDate}}" bindchange="onStartDateChange">
+        <view class="date-picker">开始：{{startDate}}</view>
+      </picker>
+      <picker mode="date" value="{{endDate}}" bindchange="onEndDateChange">
+        <view class="date-picker">结束：{{endDate}}</view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- 区间统计 -->
+  <view class="stat-card">
+    <view class="stat-row">
+      <text class="stat-label">区间订单数</text>
+      <text class="stat-value">{{monthOrderCount}} 单</text>
+    </view>
+    <view class="stat-row">
+      <text class="stat-label">区间收入</text>
+      <text class="stat-value highlight">¥{{monthIncome}}</text>
+    </view>
+  </view>
+
+  <!-- 提示 -->
+  <view class="tip-card">
+    <text class="tip-title">收入说明</text>
+    <text class="tip-text">• 收入在完成服务后自动计入</text>
+    <text class="tip-text">• 实际到账金额以平台结算为准</text>
+    <text class="tip-text">• 如有疑问请联系平台客服</text>
+  </view>
+
+</view>

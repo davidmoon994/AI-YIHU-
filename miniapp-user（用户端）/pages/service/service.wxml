@@ -1,0 +1,225 @@
+<view class="page">
+
+  <!-- 步骤指示器 -->
+  <view class="steps-bar">
+    <view class="step-item {{step >= 1 ? 'active' : ''}}">
+      <view class="step-dot">1</view>
+      <text>选服务</text>
+    </view>
+    <view class="step-line {{step >= 2 ? 'done' : ''}}"></view>
+    <view class="step-item {{step >= 2 ? 'active' : ''}}">
+      <view class="step-dot">2</view>
+      <text>就诊人</text>
+    </view>
+    <view class="step-line {{step >= 3 ? 'done' : ''}}"></view>
+    <view class="step-item {{step >= 3 ? 'active' : ''}}">
+      <view class="step-dot">3</view>
+      <text>地址时间</text>
+    </view>
+    <view class="step-line {{step >= 4 ? 'done' : ''}}"></view>
+    <view class="step-item {{step >= 4 ? 'active' : ''}}">
+      <view class="step-dot">4</view>
+      <text>确认</text>
+    </view>
+  </view>
+
+  <!-- Step 1: 选择服务类型 -->
+  <view class="section" wx:if="{{step === 1}}">
+    <view class="section-title">选择服务类型</view>
+    <view
+      class="service-card {{selectedType === item.value ? 'selected' : ''}}"
+      wx:for="{{serviceTypes}}"
+      wx:key="value"
+      bindtap="selectServiceType"
+      data-value="{{item.value}}"
+    >
+      <view class="service-icon">{{item.icon}}</view>
+      <view class="service-info">
+        <view class="service-name">{{item.label}}</view>
+        <view class="service-desc">{{item.desc}}</view>
+      </view>
+      <view class="service-price">{{item.price}}</view>
+      <view class="service-check" wx:if="{{selectedType === item.value}}">✓</view>
+    </view>
+  </view>
+
+  <!-- Step 2: 选择就诊人 -->
+  <view class="section" wx:if="{{step === 2}}">
+    <view class="section-title">选择就诊人</view>
+
+    <!-- 已选就诊人 -->
+    <view class="selected-card" wx:if="{{selectedPatient}}">
+      <view class="selected-label">已选择</view>
+      <view class="selected-name">{{selectedPatient.name}}</view>
+      <view class="selected-info">{{selectedPatient.phone}} · {{selectedPatient.relation || '本人'}}</view>
+    </view>
+
+    <!-- 已有就诊人列表 -->
+    <view class="list-title" wx:if="{{patients.length > 0}}">我的就诊人</view>
+    <view
+      class="patient-item"
+      wx:for="{{patients}}"
+      wx:key="id"
+      bindtap="selectPatient"
+      data-idx="{{index}}"
+    >
+      <view class="patient-name">{{item.name}}</view>
+      <view class="patient-info">{{item.phone}} · {{item.relation || '本人'}}</view>
+    </view>
+
+    <!-- 新增就诊人 -->
+    <view class="add-btn" bindtap="openPatientForm">+ 添加就诊人</view>
+  </view>
+
+  <!-- Step 3: 地址 + 时间 -->
+  <view class="section" wx:if="{{step === 3}}">
+    <view class="section-title">选择地址</view>
+
+    <view class="selected-card" wx:if="{{selectedAddress}}">
+      <view class="selected-label">已选择</view>
+      <view class="selected-name">{{selectedAddress.receiverName}} {{selectedAddress.receiverPhone}}</view>
+      <view class="selected-info">{{selectedAddress.province}}{{selectedAddress.city}}{{selectedAddress.district}}{{selectedAddress.detailAddress}}</view>
+    </view>
+
+    <view class="list-title" wx:if="{{addresses.length > 0}}">我的地址</view>
+    <view
+      class="address-item"
+      wx:for="{{addresses}}"
+      wx:key="id"
+      bindtap="selectAddress"
+      data-idx="{{index}}"
+    >
+      <view class="address-name">{{item.receiverName}} {{item.receiverPhone}}</view>
+      <view class="address-detail">{{item.province}}{{item.city}}{{item.district}}{{item.detailAddress}}</view>
+    </view>
+
+    <view class="add-btn" bindtap="openAddressForm">+ 添加地址</view>
+
+    <view class="section-title" style="margin-top: 32rpx;">预约时间</view>
+    <view class="form-row">
+      <text class="form-label">日期</text>
+      <picker mode="date" value="{{appointmentDate}}" start="{{minDate}}" bindchange="onDateChange">
+        <view class="picker-value {{appointmentDate ? '' : 'placeholder'}}">
+          {{appointmentDate || '请选择日期'}}
+        </view>
+      </picker>
+    </view>
+    <view class="form-row">
+      <text class="form-label">时间</text>
+      <picker mode="time" value="{{appointmentTime}}" bindchange="onTimeChange">
+        <view class="picker-value {{appointmentTime ? '' : 'placeholder'}}">
+          {{appointmentTime || '请选择时间'}}
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- Step 4: 确认订单 -->
+  <view class="section" wx:if="{{step === 4}}">
+    <view class="section-title">确认订单信息</view>
+
+    <view class="confirm-row">
+      <text class="confirm-label">服务类型</text>
+      <text class="confirm-value">{{serviceTypes[0].value === selectedType ? serviceTypes[0].label : serviceTypes[1].value === selectedType ? serviceTypes[1].label : serviceTypes[2].value === selectedType ? serviceTypes[2].label : serviceTypes[3].label}}</text>
+    </view>
+    <view class="confirm-row">
+      <text class="confirm-label">就诊人</text>
+      <text class="confirm-value">{{selectedPatient.name}} {{selectedPatient.phone}}</text>
+    </view>
+    <view class="confirm-row">
+      <text class="confirm-label">地址</text>
+      <text class="confirm-value">{{selectedAddress.province}}{{selectedAddress.city}}{{selectedAddress.district}}{{selectedAddress.detailAddress}}</text>
+    </view>
+    <view class="confirm-row">
+      <text class="confirm-label">预约时间</text>
+      <text class="confirm-value">{{appointmentDate}} {{appointmentTime}}</text>
+    </view>
+
+    <view class="form-row" style="margin-top: 24rpx;">
+      <text class="form-label">备注</text>
+      <input class="remark-input" value="{{remark}}" bindinput="onRemarkInput" placeholder="选填，如特殊需求等" />
+    </view>
+  </view>
+
+  <!-- 底部按钮 -->
+  <view class="bottom-actions">
+    <view class="btn-prev" bindtap="prevStep" wx:if="{{step > 1}}">上一步</view>
+    <view class="btn-next" bindtap="nextStep" wx:if="{{step < 4}}">下一步</view>
+    <view class="btn-submit {{submitting ? 'disabled' : ''}}" bindtap="submitOrder" wx:if="{{step === 4}}">
+      {{submitting ? '提交中...' : '提交订单'}}
+    </view>
+  </view>
+
+  <!-- ====== 就诊人选择弹窗 ====== -->
+  <view class="overlay" wx:if="{{showPatientPicker}}" bindtap="closeOverlay">
+    <view class="popup" catchtap="">
+      <view class="popup-title">选择就诊人</view>
+      <view
+        class="popup-item"
+        wx:for="{{patients}}"
+        wx:key="id"
+        bindtap="selectPatient"
+        data-idx="{{index}}"
+      >
+        {{item.name}} - {{item.phone}}
+      </view>
+      <view class="popup-item add" bindtap="openPatientForm">+ 新增就诊人</view>
+    </view>
+  </view>
+
+  <!-- ====== 就诊人表单弹窗 ====== -->
+  <view class="overlay" wx:if="{{showPatientForm}}" bindtap="closeOverlay">
+    <view class="popup popup-form" catchtap="">
+      <view class="popup-title">添加就诊人</view>
+      <view class="form-group">
+        <input class="form-input" placeholder="姓名 *" value="{{newPatient.name}}" bindinput="onPatientInput" data-field="name" />
+        <input class="form-input" placeholder="手机号" type="number" value="{{newPatient.phone}}" bindinput="onPatientInput" data-field="phone" />
+        <input class="form-input" placeholder="身份证号" value="{{newPatient.idCard}}" bindinput="onPatientInput" data-field="idCard" />
+        <view class="form-row-inline">
+          <view class="radio-group">
+            <text class="radio-label">关系：</text>
+            <text class="radio {{newPatient.relation === 'self' ? 'active' : ''}}" bindtap="onPatientInput" data-field="relation" data-value="self">本人</text>
+            <text class="radio {{newPatient.relation === 'parent' ? 'active' : ''}}" bindtap="onPatientInput" data-field="relation" data-value="parent">父母</text>
+            <text class="radio {{newPatient.relation === 'child' ? 'active' : ''}}" bindtap="onPatientInput" data-field="relation" data-value="child">子女</text>
+            <text class="radio {{newPatient.relation === 'other' ? 'active' : ''}}" bindtap="onPatientInput" data-field="relation" data-value="other">其他</text>
+          </view>
+        </view>
+      </view>
+      <view class="popup-btn" bindtap="savePatient">保存</view>
+    </view>
+  </view>
+
+  <!-- ====== 地址选择弹窗 ====== -->
+  <view class="overlay" wx:if="{{showAddressPicker}}" bindtap="closeOverlay">
+    <view class="popup" catchtap="">
+      <view class="popup-title">选择地址</view>
+      <view
+        class="popup-item"
+        wx:for="{{addresses}}"
+        wx:key="id"
+        bindtap="selectAddress"
+        data-idx="{{index}}"
+      >
+        {{item.receiverName}} - {{item.province}}{{item.city}}{{item.district}}{{item.detailAddress}}
+      </view>
+      <view class="popup-item add" bindtap="openAddressForm">+ 新增地址</view>
+    </view>
+  </view>
+
+  <!-- ====== 地址表单弹窗 ====== -->
+  <view class="overlay" wx:if="{{showAddressForm}}" bindtap="closeOverlay">
+    <view class="popup popup-form" catchtap="">
+      <view class="popup-title">添加地址</view>
+      <view class="form-group">
+        <input class="form-input" placeholder="收件人 *" value="{{newAddress.receiverName}}" bindinput="onAddressInput" data-field="receiverName" />
+        <input class="form-input" placeholder="手机号 *" type="number" value="{{newAddress.receiverPhone}}" bindinput="onAddressInput" data-field="receiverPhone" />
+        <input class="form-input" placeholder="省份" value="{{newAddress.province}}" bindinput="onAddressInput" data-field="province" />
+        <input class="form-input" placeholder="城市" value="{{newAddress.city}}" bindinput="onAddressInput" data-field="city" />
+        <input class="form-input" placeholder="区/县" value="{{newAddress.district}}" bindinput="onAddressInput" data-field="district" />
+        <input class="form-input" placeholder="详细地址 *" value="{{newAddress.detailAddress}}" bindinput="onAddressInput" data-field="detailAddress" />
+      </view>
+      <view class="popup-btn" bindtap="saveAddress">保存</view>
+    </view>
+  </view>
+
+</view>

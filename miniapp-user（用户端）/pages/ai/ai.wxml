@@ -1,0 +1,69 @@
+<view class="page">
+
+  <!-- 聊天区域 -->
+  <scroll-view class="chat-area" scroll-y scroll-into-view="{{scrollToView}}" enhanced show-scrollbar="{{false}}">
+    <view class="chat-inner">
+      <view
+        class="msg-row msg-{{item.role}}"
+        wx:for="{{messages}}"
+        wx:key="index"
+        id="msg-{{index}}"
+      >
+        <view class="avatar avatar-{{item.role}}">
+          {{item.role === 'user' ? '我' : 'AI'}}
+        </view>
+        <view class="bubble bubble-{{item.role}}">
+          <text>{{item.content}}</text>
+          <view wx:if="{{item.role === 'ai'}}" class="copy-btn" bindtap="copyAiReply" data-content="{{item.content}}">
+            复制
+          </view>
+        </view>
+      </view>
+
+      <!-- 发送中指示器 -->
+      <view class="msg-row msg-ai" wx:if="{{sending}}">
+        <view class="avatar avatar-ai">AI</view>
+        <view class="bubble bubble-ai typing">正在思考...</view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 快捷操作面板 -->
+  <view class="quick-panel" wx:if="{{showQuickPanel && messages.length <= 1}}">
+    <view class="quick-title">快捷功能</view>
+    <view class="quick-grid">
+      <view
+        class="quick-item"
+        wx:for="{{quickActions}}"
+        wx:key="type"
+        bindtap="onQuickAction"
+        data-type="{{item.type}}"
+        data-hint="{{item.hint}}"
+        data-label="{{item.label}}"
+      >
+        <text class="quick-icon">{{item.icon}}</text>
+        <text class="quick-label">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 输入区域 -->
+  <view class="input-bar">
+    <view class="clear-btn" bindtap="clearChat" wx:if="{{messages.length > 0}}">
+      <text>清空</text>
+    </view>
+    <input
+      class="input-field"
+      value="{{inputText}}"
+      bindinput="onInput"
+      bindconfirm="smartSend"
+      placeholder="描述您的症状或需求..."
+      confirm-type="send"
+      adjust-position="{{true}}"
+    />
+    <view class="send-btn {{inputText.trim() && !sending ? 'active' : ''}}" bindtap="smartSend">
+      发送
+    </view>
+  </view>
+
+</view>

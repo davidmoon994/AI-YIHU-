@@ -1,0 +1,161 @@
+<view class="page">
+
+  <!-- 未登录 -->
+  <view class="login-card" wx:if="{{!isLogin}}">
+    <view class="login-avatar">?</view>
+    <view class="login-text">您还未登录</view>
+    <view class="login-btn" bindtap="goLogin">微信一键登录</view>
+  </view>
+
+  <!-- 用户信息 -->
+  <view class="profile-card" wx:if="{{isLogin && profile}}">
+    <view class="profile-top">
+      <image class="profile-avatar" src="{{profile.avatar_url || ''}}" wx:if="{{profile.avatar_url}}" mode="aspectFill" />
+      <view class="profile-avatar-placeholder" wx:else>{{profile.nickname ? profile.nickname[0] : 'U'}}</view>
+      <view class="profile-info">
+        <view class="profile-name">{{profile.nickname || '用户'}}</view>
+        <view class="profile-phone">{{profile.phone || ''}}</view>
+      </view>
+      <view class="logout-btn" bindtap="logout">退出</view>
+    </view>
+    <view class="profile-stats">
+      <view class="stat-item">
+        <text class="stat-num">{{orderTotal || 0}}</text>
+        <text class="stat-label">总订单</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Tab 切换 -->
+  <view class="tab-bar" wx:if="{{isLogin}}">
+    <view class="tab-item {{currentTab === 'orders' ? 'active' : ''}}" bindtap="switchTab" data-tab="orders">
+      我的订单
+    </view>
+    <view class="tab-item {{currentTab === 'messages' ? 'active' : ''}}" bindtap="switchTab" data-tab="messages">
+      消息
+      <text class="badge" wx:if="{{unreadCount > 0}}">{{unreadCount}}</text>
+    </view>
+  </view>
+
+  <!-- ========== 订单列表 ========== -->
+  <view wx:if="{{currentTab === 'orders' && isLogin}}">
+    <!-- 状态筛选 -->
+    <scroll-view class="filter-bar" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="filter-item {{orderStatus === '' ? 'active' : ''}}" bindtap="filterOrders" data-status="">全部</view>
+      <view class="filter-item {{orderStatus === 'pending' ? 'active' : ''}}" bindtap="filterOrders" data-status="pending">待支付</view>
+      <view class="filter-item {{orderStatus === 'dispatching' ? 'active' : ''}}" bindtap="filterOrders" data-status="dispatching">派单中</view>
+      <view class="filter-item {{orderStatus === 'serving' ? 'active' : ''}}" bindtap="filterOrders" data-status="serving">进行中</view>
+      <view class="filter-item {{orderStatus === 'completed' ? 'active' : ''}}" bindtap="filterOrders" data-status="completed">已完成</view>
+      <view class="filter-item {{orderStatus === 'cancelled' ? 'active' : ''}}" bindtap="filterOrders" data-status="cancelled">已取消</view>
+    </scroll-view>
+
+    <!-- 订单卡片 -->
+    <view class="order-card" wx:for="{{orders}}" wx:key="id" bindtap="viewOrderDetail" data-id="{{item.id}}">
+      <view class="order-header">
+        <text class="order-no">{{item.order_no}}</text>
+        <text class="order-status status-{{item.order_status}}">{{statusMap[item.order_status] || item.order_status}}</text>
+      </view>
+      <view class="order-body">
+        <view class="order-info">
+          <text>{{item.hospital_name || '未指定医院'}}</text>
+        </view>
+        <view class="order-info">
+          <text>{{item.patient_name || ''}} · {{item.appointment_time || ''}}</text>
+        </view>
+        <view class="order-info">
+          <text class="order-amount">¥{{item.payable_amount || 0}}</text>
+        </view>
+      </view>
+      <view class="order-actions" catchtap="">
+        <view class="action-btn" wx:if="{{item.order_status === 'pending'}}" catchtap="payOrder" data-id="{{item.id}}">去支付</view>
+        <view class="action-btn secondary" wx:if="{{item.order_status === 'pending'}}" catchtap="cancelOrder" data-id="{{item.id}}">取消</view>
+        <view class="action-btn" wx:if="{{item.order_status === 'paid' || item.order_status === 'dispatching'}}" catchtap="requestRefund" data-id="{{item.id}}">申请退款</view>
+        <view class="action-btn secondary" wx:if="{{item.order_status === 'completed'}}" catchtap="reorder" data-id="{{item.id}}">再来一单</view>
+        <view class="action-btn secondary" wx:if="{{item.order_status === 'cancelled' || item.order_status === 'completed' || item.order_status === 'closed'}}" catchtap="deleteOrder" data-id="{{item.id}}">删除</view>
+      </view>
+    </view>
+
+    <!-- 加载更多 -->
+    <view class="load-more" wx:if="{{hasMore}}" bindtap="loadMore">
+      {{orderLoading ? '加载中...' : '加载更多'}}
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty" wx:if="{{!orderLoading && orders.length === 0}}">
+      <text class="empty-icon">📋</text>
+      <text class="empty-text">暂无订单</text>
+    </view>
+  </view>
+
+  <!-- ========== 消息列表 ========== -->
+  <view wx:if="{{currentTab === 'messages' && isLogin}}">
+    <view class="msg-toolbar" wx:if="{{unreadCount > 0}}">
+      <view class="read-all-btn" bindtap="readAllMessages">全部已读</view>
+    </view>
+
+    <view class="msg-card {{item.is_read ? '' : 'unread'}}" wx:for="{{messages}}" wx:key="id">
+      <view class="msg-title">{{item.title}}</view>
+      <view class="msg-content">{{item.content}}</view>
+      <view class="msg-footer">
+        <text class="msg-time">{{item.created_at}}</text>
+        <text class="msg-delete" catchtap="deleteMessage" data-id="{{item.id}}">删除</text>
+      </view>
+    </view>
+
+    <view class="empty" wx:if="{{messages.length === 0}}">
+      <text class="empty-icon">🔔</text>
+      <text class="empty-text">暂无消息</text>
+    </view>
+  </view>
+
+  <!-- ====== 订单详情弹窗 ====== -->
+  <view class="overlay" wx:if="{{showDetail}}" bindtap="closeDetail">
+    <view class="detail-popup" catchtap="">
+      <view class="detail-title">订单详情</view>
+      <view wx:if="{{detailLoading}}" class="detail-loading">加载中...</view>
+      <block wx:elif="{{orderDetail}}">
+        <view class="detail-row">
+          <text class="detail-label">订单号</text>
+          <text class="detail-value">{{orderDetail.order_no}}</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">状态</text>
+          <text class="detail-value status-{{orderDetail.order_status}}">{{statusMap[orderDetail.order_status] || orderDetail.order_status}}</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">医院</text>
+          <text class="detail-value">{{orderDetail.hospital_name || '-'}}</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">就诊人</text>
+          <text class="detail-value">{{orderDetail.patient_name || '-'}}</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">预约时间</text>
+          <text class="detail-value">{{orderDetail.appointment_time || '-'}}</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">金额</text>
+          <text class="detail-value price">¥{{orderDetail.payable_amount || 0}}</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">创建时间</text>
+          <text class="detail-value">{{orderDetail.created_at || '-'}}</text>
+        </view>
+        <view class="detail-row" wx:if="{{orderDetail.remark}}">
+          <text class="detail-label">备注</text>
+          <text class="detail-value">{{orderDetail.remark}}</text>
+        </view>
+
+        <!-- 操作按钮 -->
+        <view class="detail-actions">
+          <view class="action-btn" wx:if="{{orderDetail.order_status === 'pending'}}" bindtap="payOrder" data-id="{{orderDetail.id}}">去支付</view>
+          <view class="action-btn secondary" wx:if="{{orderDetail.order_status === 'pending'}}" bindtap="cancelOrder" data-id="{{orderDetail.id}}">取消订单</view>
+          <view class="action-btn" wx:if="{{orderDetail.order_status === 'paid' || orderDetail.order_status === 'dispatching'}}" bindtap="requestRefund" data-id="{{orderDetail.id}}">申请退款</view>
+          <view class="action-btn secondary" wx:if="{{orderDetail.order_status === 'completed'}}" bindtap="reorder" data-id="{{orderDetail.id}}">再来一单</view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+</view>

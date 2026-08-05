@@ -1,0 +1,33 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# 环境配置（含密码/密钥）
+.env
+*.pem
+
+# 上传文件
+uploads/*
+!uploads/.gitkeep
+
+# 日志
+logs/
+*.log
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+.qoder/
+
+# 微信开发者工具
+miniprogram_npm/
+.project
+project.private.config.json
+
+# 编译产物
+dist/
+build/
