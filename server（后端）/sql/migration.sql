@@ -6,15 +6,23 @@
 
 USE `community_medical`;
 
--- 1. communities 表：新增子商户号和抽佣比例
-ALTER TABLE `communities`
-  ADD COLUMN IF NOT EXISTS `sub_mchid` VARCHAR(32) DEFAULT NULL COMMENT '微信支付子商户号' AFTER `manager_phone`,
-  ADD COLUMN IF NOT EXISTS `commission_rate` DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '平台抽佣比例(%)' AFTER `sub_mchid`;
+-- 1. communities 表：新增子商户号和抽佣比例（MySQL 8.0 兼容）
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='community_medical' AND TABLE_NAME='communities' AND COLUMN_NAME='sub_mchid');
+SET @sql = IF(@col_exists = 0, "ALTER TABLE `communities` ADD COLUMN `sub_mchid` VARCHAR(32) DEFAULT NULL COMMENT '微信支付子商户号' AFTER `manager_phone`", "SELECT 1");
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='community_medical' AND TABLE_NAME='communities' AND COLUMN_NAME='commission_rate');
+SET @sql = IF(@col_exists = 0, "ALTER TABLE `communities` ADD COLUMN `commission_rate` DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '平台抽佣比例(%)' AFTER `sub_mchid`", "SELECT 1");
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- 2. payments 表：新增子商户号和分账状态
-ALTER TABLE `payments`
-  ADD COLUMN IF NOT EXISTS `sub_mchid` VARCHAR(32) DEFAULT NULL COMMENT '子商户号' AFTER `out_trade_no`,
-  ADD COLUMN IF NOT EXISTS `profit_share_status` VARCHAR(20) NOT NULL DEFAULT 'UNSETTLED' COMMENT '分账状态: UNSETTLED/PROCESSING/SUCCESS/FAILED' AFTER `paid_at`;
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='community_medical' AND TABLE_NAME='payments' AND COLUMN_NAME='sub_mchid');
+SET @sql = IF(@col_exists = 0, "ALTER TABLE `payments` ADD COLUMN `sub_mchid` VARCHAR(32) DEFAULT NULL COMMENT '子商户号' AFTER `out_trade_no`", "SELECT 1");
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='community_medical' AND TABLE_NAME='payments' AND COLUMN_NAME='profit_share_status');
+SET @sql = IF(@col_exists = 0, "ALTER TABLE `payments` ADD COLUMN `profit_share_status` VARCHAR(20) NOT NULL DEFAULT 'UNSETTLED' COMMENT '分账状态' AFTER `sub_mchid`", "SELECT 1");
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- 3. system_configs：新增支付配置项
 INSERT INTO `system_configs` (`config_key`, `config_value`, `description`, `created_at`, `updated_at`) VALUES
