@@ -384,4 +384,60 @@ router.get("/statistics/escort", enforceCommunityScope, async (req, res, next) =
   }
 });
 
+// ===== 支付配置管理 =====
+router.get("/payment/config", requireRole(ROLE.SUPER_ADMIN), async (req, res, next) => {
+  try {
+    const config = await adminService.getPaymentConfig();
+    return success(res, config);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.put("/payment/config", requireRole(ROLE.SUPER_ADMIN), requireBody(["configKey", "configValue"]), async (req, res, next) => {
+  try {
+    const result = await adminService.updatePaymentConfig(req.user.userId, req.body.configKey, req.body.configValue);
+    await adminService.writeOperationLog(req.user.userId, "payment", "config_update", req, "success");
+    return success(res, result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ===== 社区子商户管理 =====
+router.get("/payment/communities", requireRole(ROLE.SUPER_ADMIN), async (req, res, next) => {
+  try {
+    const list = await adminService.listCommunitiesWithSubMerchants();
+    return success(res, list);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.put("/payment/community", requireRole(ROLE.SUPER_ADMIN), requireBody(["communityId"]), async (req, res, next) => {
+  try {
+    const result = await adminService.updateCommunitySubMerchant(
+      req.body.communityId,
+      req.body.subMchid || null,
+      req.body.commissionRate || 0
+    );
+    await adminService.writeOperationLog(req.user.userId, "payment", "sub_merchant_update", req, "success");
+    return success(res, result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ===== 手动触发分账 =====
+router.post("/payment/profit-share", requireRole(ROLE.SUPER_ADMIN), requireBody(["orderId"]), async (req, res, next) => {
+  try {
+    const payService = require("../services/payService");
+    const result = await payService.executeProfitShare(req.body.orderId);
+    await adminService.writeOperationLog(req.user.userId, "payment", "profit_share", req, "success");
+    return success(res, result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

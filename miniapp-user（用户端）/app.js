@@ -1,5 +1,5 @@
 // 全局配置与工具函数
-const API_BASE = 'https://your-server.com/api/v1'
+const API_BASE = 'https://yihu.nnrike.ink/api/v1'
 
 App({
   globalData: {

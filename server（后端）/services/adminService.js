@@ -141,6 +141,48 @@ async function listCommunities() {
   return db.query("SELECT * FROM communities ORDER BY id ASC");
 }
 
+// ===== 支付配置管理 =====
+async function getPaymentConfig() {
+  const rows = await db.query("SELECT config_key, config_value, description FROM system_configs WHERE config_key IN ('pay_mode','sp_mchid','api_v3_key','serial_no','private_key_path','profit_share_enabled') ORDER BY config_key ASC");
+  const config = {};
+  for (const row of rows) {
+    config[row.config_key] = { value: row.config_value, description: row.description };
+  }
+  return config;
+}
+
+async function updatePaymentConfig(adminId, configKey, configValue) {
+  const allowedKeys = ['pay_mode', 'sp_mchid', 'api_v3_key', 'serial_no', 'private_key_path', 'profit_share_enabled'];
+  if (!allowedKeys.includes(configKey)) {
+    throw new BizError(400, "不允许的配置项");
+  }
+  // 敏感字段脱敏显示时不覆盖
+  await db.query(
+    "UPDATE system_configs SET config_value = ?, updated_at = NOW() WHERE config_key = ?",
+    [configValue, configKey]
+  );
+  // 清除支付配置缓存
+  const payService = require("./payService");
+  payService.clearPayConfigCache();
+  return { configKey, configValue };
+}
+
+// ===== 社区子商户管理 =====
+async function updateCommunitySubMerchant(communityId, subMchid, commissionRate) {
+  const result = await db.query(
+    "UPDATE communities SET sub_mchid = ?, commission_rate = ?, updated_at = NOW() WHERE id = ?",
+    [subMchid || null, commissionRate || 0, communityId]
+  );
+  if (result.affectedRows === 0) {
+    throw new BizError(404, "社区不存在");
+  }
+  return { communityId, subMchid, commissionRate };
+}
+
+async function listCommunitiesWithSubMerchants() {
+  return db.query("SELECT id, name, code, manager_name, manager_phone, sub_mchid, commission_rate, status FROM communities ORDER BY id ASC");
+}
+
 module.exports = {
   writeOperationLog,
   getDashboard,
@@ -154,5 +196,9 @@ module.exports = {
   getStatistics,
   getConfigs,
   updateConfig,
-  listCommunities
+  listCommunities,
+  getPaymentConfig,
+  updatePaymentConfig,
+  updateCommunitySubMerchant,
+  listCommunitiesWithSubMerchants
 };

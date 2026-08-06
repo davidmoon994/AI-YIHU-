@@ -62,6 +62,7 @@
         <el-menu-item index="/orders"><i class="el-icon-s-order"></i><span>订单管理</span></el-menu-item>
         <el-menu-item index="/escorts"><i class="el-icon-user"></i><span>陪诊员管理</span></el-menu-item>
         <el-menu-item index="/community"><i class="el-icon-s-home"></i><span>社区与系统</span></el-menu-item>
+        <el-menu-item index="/payment"><i class="el-icon-wallet"></i><span>支付管理</span></el-menu-item>
       </el-menu>
     </div>
     <div class="main">
@@ -358,6 +359,126 @@ const CommunityPage = {
   }
 }
 
+// ==================== 组件：支付管理 ====================
+const PaymentPage = {
+  template: `
+    <div>
+      <el-card style="margin-bottom:20px">
+        <div slot="header"><b>支付配置</b></div>
+        <el-form label-width="160px" v-loading="configLoading">
+          <el-form-item label="支付模式">
+            <el-radio-group v-model="payConfig.pay_mode" @change="saveConfig('pay_mode', $event)">
+              <el-radio label="direct">直连商户</el-radio>
+              <el-radio label="partner">服务商模式</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="服务商商户号(sp_mchid)">
+            <el-input v-model="payConfig.sp_mchid" placeholder="服务商模式时必填" style="width:320px" @blur="saveConfig('sp_mchid', payConfig.sp_mchid)"></el-input>
+          </el-form-item>
+          <el-form-item label="APIv3密钥">
+            <el-input v-model="payConfig.api_v3_key" placeholder="微信支付APIv3密钥" style="width:320px" show-password @blur="saveConfig('api_v3_key', payConfig.api_v3_key)"></el-input>
+          </el-form-item>
+          <el-form-item label="证书序列号">
+            <el-input v-model="payConfig.serial_no" placeholder="商户证书序列号" style="width:320px" @blur="saveConfig('serial_no', payConfig.serial_no)"></el-input>
+          </el-form-item>
+          <el-form-item label="私钥文件路径">
+            <el-input v-model="payConfig.private_key_path" placeholder="服务器上的私钥文件路径" style="width:320px" @blur="saveConfig('private_key_path', payConfig.private_key_path)"></el-input>
+          </el-form-item>
+          <el-form-item label="分账功能">
+            <el-switch v-model="payConfig.profit_share_enabled" active-value="1" inactive-value="0" @change="saveConfig('profit_share_enabled', payConfig.profit_share_enabled)"></el-switch>
+            <span style="margin-left:12px;color:#909399;font-size:12px">开启后订单完成时自动分账抽佣</span>
+          </el-form-item>
+        </el-form>
+      </el-card>
+      <el-card>
+        <div slot="header"><b>社区子商户管理</b></div>
+        <el-table :data="communities" v-loading="tableLoading" border stripe>
+          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="name" label="社区名称" />
+          <el-table-column prop="manager_name" label="负责人" />
+          <el-table-column prop="manager_phone" label="联系电话" />
+          <el-table-column label="子商户号" width="200">
+            <template slot-scope="scope">
+              <el-input v-if="editingId===scope.row.id" v-model="editForm.subMchid" size="mini" placeholder="子商户号"></el-input>
+              <span v-else>{{scope.row.sub_mchid||'未配置'}}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="抽佣比例(%)" width="150">
+            <template slot-scope="scope">
+              <el-input-number v-if="editingId===scope.row.id" v-model="editForm.commissionRate" :min="0" :max="100" :precision="2" size="mini"></el-input-number>
+              <span v-else>{{scope.row.commission_rate||0}}%</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="180">
+            <template slot-scope="scope">
+              <template v-if="editingId===scope.row.id">
+                <el-button type="primary" size="mini" @click="saveCommunity(scope.row)">保存</el-button>
+                <el-button size="mini" @click="editingId=null">取消</el-button>
+              </template>
+              <el-button v-else type="text" @click="startEdit(scope.row)">编辑</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+    </div>`,
+  data() {
+    return {
+      configLoading: false,
+      tableLoading: false,
+      payConfig: { pay_mode: 'direct', sp_mchid: '', api_v3_key: '', serial_no: '', private_key_path: '', profit_share_enabled: '0' },
+      communities: [],
+      editingId: null,
+      editForm: { subMchid: '', commissionRate: 0 }
+    }
+  },
+  async mounted() {
+    await Promise.all([this.loadConfig(), this.loadCommunities()])
+  },
+  methods: {
+    async loadConfig() {
+      this.configLoading = true
+      try {
+        const r = await axios.get(API_BASE + '/payment/config')
+        const data = r.data.data || {}
+        for (const key of Object.keys(this.payConfig)) {
+          if (data[key]) this.payConfig[key] = data[key].value || this.payConfig[key]
+        }
+      } catch (e) { this.$message.error('加载支付配置失败') }
+      finally { this.configLoading = false }
+    },
+    async saveConfig(key, value) {
+      try {
+        await axios.put(API_BASE + '/payment/config', { configKey: key, configValue: value })
+        this.$message.success('已保存')
+      } catch (e) { this.$message.error('保存失败') }
+    },
+    async loadCommunities() {
+      this.tableLoading = true
+      try {
+        const r = await axios.get(API_BASE + '/payment/communities')
+        this.communities = r.data.data || []
+      } catch (e) { this.$message.error('加载社区列表失败') }
+      finally { this.tableLoading = false }
+    },
+    startEdit(row) {
+      this.editingId = row.id
+      this.editForm = { subMchid: row.sub_mchid || '', commissionRate: Number(row.commission_rate) || 0 }
+    },
+    async saveCommunity(row) {
+      try {
+        await axios.put(API_BASE + '/payment/community', {
+          communityId: row.id,
+          subMchid: this.editForm.subMchid,
+          commissionRate: this.editForm.commissionRate
+        })
+        this.$message.success('已保存')
+        this.editingId = null
+        await this.loadCommunities()
+      } catch (e) { this.$message.error('保存失败') }
+    }
+  }
+}
+
 // ==================== Vue 路由 & 根实例 ====================
 const router = new VueRouter({
   routes: [
@@ -365,11 +486,12 @@ const router = new VueRouter({
     { path: '/dashboard', component: DashboardPage },
     { path: '/orders', component: OrdersPage },
     { path: '/escorts', component: EscortsPage },
-    { path: '/community', component: CommunityPage }
+    { path: '/community', component: CommunityPage },
+    { path: '/payment', component: PaymentPage }
   ]
 })
 
-const TITLE_MAP = { '/dashboard':'运营总览', '/orders':'订单管理', '/escorts':'陪诊员管理', '/community':'社区与系统管理' }
+const TITLE_MAP = { '/dashboard':'运营总览', '/orders':'订单管理', '/escorts':'陪诊员管理', '/community':'社区与系统管理', '/payment':'支付管理' }
 
 new Vue({
   el: '#app',
