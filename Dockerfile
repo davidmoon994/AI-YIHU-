@@ -15,7 +15,7 @@ RUN mkdir -p "/admin（后台）"
 COPY "admin（后台）/index.html" "/admin（后台）/index.html"
 
 # uploads 与 logs 目录
-RUN mkdir -p uploads logs
+RUN mkdir -p uploads/icons logs
 
 # 非 root 用户运行
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

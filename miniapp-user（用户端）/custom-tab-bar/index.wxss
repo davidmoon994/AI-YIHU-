@@ -20,6 +20,11 @@
   line-height: 1;
 }
 
+.tab-icon-img {
+  width: 44rpx;
+  height: 44rpx;
+}
+
 .tab-text {
   font-size: 22rpx;
   color: #999;

@@ -4,7 +4,8 @@ const API_BASE = 'https://yihu.nnrike.ink/api/v1'
 App({
   globalData: {
     apiBase: API_BASE,
-    token: ''
+    token: '',
+    icons: {}
   },
 
   onLaunch() {
@@ -12,6 +13,26 @@ App({
     const token = wx.getStorageSync('escort_token')
     if (token) {
       this.globalData.token = token
+    }
+    // 加载图标配置
+    this.loadIcons()
+  },
+
+  /**
+   * 从服务器获取最新图标配置
+   */
+  async loadIcons() {
+    try {
+      const icons = await this.request({ url: '/icons?client=escort' })
+      this.globalData.icons = icons
+      wx.setStorageSync('escort_icons', icons)
+      if (typeof this.getTabBar === 'function') {
+        const tabbar = this.getTabBar()
+        if (tabbar) tabbar.updateIcons()
+      }
+    } catch (e) {
+      const cached = wx.getStorageSync('escort_icons')
+      if (cached) this.globalData.icons = cached
     }
   },
 

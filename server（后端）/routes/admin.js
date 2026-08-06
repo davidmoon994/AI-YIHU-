@@ -5,12 +5,37 @@ const router = express.Router();
 
 const adminService = require("../services/adminService");
 const messageService = require("../services/messageService");
+const iconService = require("../services/iconService");
 const db = require("../db");
 const { success, successPage } = require("../utils/response");
 const { authenticate, requireRole, enforceCommunityScope } = require("../middleware/auth");
 const { requireBody, requireQuery } = require("../middleware/validator");
 const { ROLE } = require("../utils/constants");
 const { BizError } = require("../middleware/error");
+
+const multer = require("multer");
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
+
+// 图标上传配置
+const iconUpload = multer({
+  storage: multer.diskStorage({
+    destination: path.join(__dirname, "..", "uploads", "icons"),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      cb(null, `${req.params.iconKey}_${Date.now()}${ext}`);
+    }
+  }),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /\.(png|jpg|jpeg|svg|gif|webp)$/i;
+    if (allowed.test(path.extname(file.originalname))) {
+      cb(null, true);
+    } else {
+      cb(new Error("仅支持 png/jpg/svg/gif/webp 格式"));
+    }
+  }
+});
 
 // POST /api/v1/admin/login —— 后台管理员登录，不需要JWT
 router.post("/login", requireBody(["username", "password"]), async (req, res, next) => {
@@ -434,6 +459,41 @@ router.post("/payment/profit-share", requireRole(ROLE.SUPER_ADMIN), requireBody(
     const payService = require("../services/payService");
     const result = await payService.executeProfitShare(req.body.orderId);
     await adminService.writeOperationLog(req.user.userId, "payment", "profit_share", req, "success");
+    return success(res, result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ===== 图标管理 =====
+router.get("/icons", async (req, res, next) => {
+  try {
+    const list = await iconService.listIcons({
+      category: req.query.category,
+      client: req.query.client
+    });
+    return success(res, list);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post("/icons/:iconKey/upload", iconUpload.single("icon"), async (req, res, next) => {
+  try {
+    if (!req.file) throw new BizError(400, "请上传图标文件");
+    const filePath = `/uploads/icons/${req.file.filename}`;
+    const result = await iconService.uploadIcon(req.params.iconKey, filePath);
+    await adminService.writeOperationLog(req.user.userId, "icon", "upload", req, "success");
+    return success(res, result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post("/icons/:iconKey/reset", async (req, res, next) => {
+  try {
+    const result = await iconService.resetIcon(req.params.iconKey);
+    await adminService.writeOperationLog(req.user.userId, "icon", "reset", req, "success");
     return success(res, result);
   } catch (err) {
     return next(err);

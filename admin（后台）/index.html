@@ -63,6 +63,7 @@
         <el-menu-item index="/escorts"><i class="el-icon-user"></i><span>陪诊员管理</span></el-menu-item>
         <el-menu-item index="/community"><i class="el-icon-s-home"></i><span>社区与系统</span></el-menu-item>
         <el-menu-item index="/payment"><i class="el-icon-wallet"></i><span>支付管理</span></el-menu-item>
+        <el-menu-item index="/icons"><i class="el-icon-picture-outline"></i><span>图标管理</span></el-menu-item>
       </el-menu>
     </div>
     <div class="main">
@@ -479,6 +480,119 @@ const PaymentPage = {
   }
 }
 
+// ==================== 组件：图标管理 ====================
+const IconsPage = {
+  template: `
+    <div>
+      <el-row :gutter="16" style="margin-bottom:16px">
+        <el-col :span="4">
+          <el-select v-model="filterClient" placeholder="所属端" @change="loadList">
+            <el-option label="全部" value=""/>
+            <el-option label="用户端" value="user"/>
+            <el-option label="陪诊员端" value="escort"/>
+            <el-option label="通用" value="common"/>
+          </el-select>
+        </el-col>
+        <el-col :span="4">
+          <el-select v-model="filterCategory" placeholder="分类" @change="loadList">
+            <el-option label="全部" value=""/>
+            <el-option label="TabBar" value="tab"/>
+            <el-option label="Banner" value="banner"/>
+            <el-option label="服务图标" value="service"/>
+          </el-select>
+        </el-col>
+        <el-col :span="4"><el-button type="primary" @click="loadList">刷新</el-button></el-col>
+      </el-row>
+      <el-alert title="说明" type="info" :closable="false" style="margin-bottom:16px">
+        <p>上传新图标会替换默认图标。支持 PNG/JPG/SVG/GIF/WebP 格式，最大 2MB。</p>
+        <p>小程序端会自动拉取最新图标，无需重新发布小程序。</p>
+      </el-alert>
+      <el-table :data="iconList" border stripe v-loading="loading" style="width:100%">
+        <el-table-column prop="icon_key" label="标识键" width="200"/>
+        <el-table-column prop="name" label="名称" width="120"/>
+        <el-table-column label="所属端" width="100">
+          <template slot-scope="{row}">
+            <el-tag size="small" :type="row.client==='user'?'':'success'">{{clientLabel(row.client)}}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="当前图标" width="160">
+          <template slot-scope="{row}">
+            <img :src="getIconUrl(row)" style="width:40px;height:40px;object-fit:contain;border:1px solid #eee;border-radius:4px;padding:2px" />
+            <el-tag v-if="row.file_path" size="mini" type="warning" style="margin-left:4px">自定义</el-tag>
+            <el-tag v-else size="mini" type="info" style="margin-left:4px">默认</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" min-width="200">
+          <template slot-scope="{row}">
+            <el-upload
+              :action="uploadUrl(row.icon_key)"
+              :show-file-list="false"
+              :headers="uploadHeaders()"
+              :before-upload="beforeUpload"
+              :on-success="(res) => onUploadSuccess(res, row)"
+              :on-error="onUploadError"
+              accept=".png,.jpg,.jpeg,.svg,.gif,.webp">
+              <el-button size="mini" type="primary" icon="el-icon-upload2">上传替换</el-button>
+            </el-upload>
+            <el-button size="mini" type="warning" v-if="row.file_path" @click="resetIcon(row)" style="margin-left:8px">恢复默认</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>`,
+  data() {
+    return {
+      iconList: [],
+      loading: false,
+      filterClient: '',
+      filterCategory: ''
+    }
+  },
+  mounted() { this.loadList() },
+  methods: {
+    async loadList() {
+      this.loading = true
+      try {
+        const params = {}
+        if (this.filterClient) params.client = this.filterClient
+        if (this.filterCategory) params.category = this.filterCategory
+        const r = await axios.get(API_BASE + '/icons', { params })
+        this.iconList = r.data.data || []
+      } catch (e) { this.$message.error('加载失败') }
+      finally { this.loading = false }
+    },
+    clientLabel(c) { return { user: '用户端', escort: '陪诊员端', common: '通用' }[c] || c },
+    getIconUrl(row) {
+      const p = row.file_path || row.default_path
+      if (!p) return ''
+      return p.startsWith('/default-icons/') ? p : p
+    },
+    uploadUrl(iconKey) { return API_BASE + '/icons/' + iconKey + '/upload' },
+    uploadHeaders() { return { Authorization: 'Bearer ' + localStorage.getItem('admin_token') } },
+    beforeUpload(file) {
+      const ok = file.size <= 2 * 1024 * 1024
+      if (!ok) this.$message.error('文件大小不能超过 2MB')
+      return ok
+    },
+    onUploadSuccess(res, row) {
+      if (res.code === 0) {
+        this.$message.success('上传成功')
+        this.loadList()
+      } else {
+        this.$message.error(res.message || '上传失败')
+      }
+    },
+    onUploadError() { this.$message.error('上传失败') },
+    async resetIcon(row) {
+      try {
+        await this.$confirm('确定恢复默认图标？当前自定义图标将被删除。', '提示', { type: 'warning' })
+        await axios.post(API_BASE + '/icons/' + row.icon_key + '/reset')
+        this.$message.success('已恢复默认')
+        this.loadList()
+      } catch (e) { if (e !== 'cancel') this.$message.error('操作失败') }
+    }
+  }
+}
+
 // ==================== Vue 路由 & 根实例 ====================
 const router = new VueRouter({
   routes: [
@@ -487,11 +601,12 @@ const router = new VueRouter({
     { path: '/orders', component: OrdersPage },
     { path: '/escorts', component: EscortsPage },
     { path: '/community', component: CommunityPage },
-    { path: '/payment', component: PaymentPage }
+    { path: '/payment', component: PaymentPage },
+    { path: '/icons', component: IconsPage }
   ]
 })
 
-const TITLE_MAP = { '/dashboard':'运营总览', '/orders':'订单管理', '/escorts':'陪诊员管理', '/community':'社区与系统管理', '/payment':'支付管理' }
+const TITLE_MAP = { '/dashboard':'运营总览', '/orders':'订单管理', '/escorts':'陪诊员管理', '/community':'社区与系统管理', '/payment':'支付管理', '/icons':'图标管理' }
 
 new Vue({
   el: '#app',

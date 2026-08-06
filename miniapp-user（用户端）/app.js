@@ -5,7 +5,8 @@ App({
   globalData: {
     apiBase: API_BASE,
     token: '',
-    userInfo: null
+    userInfo: null,
+    icons: {}
   },
 
   onLaunch() {
@@ -16,6 +17,29 @@ App({
     const userInfo = wx.getStorageSync('user_info')
     if (userInfo) {
       this.globalData.userInfo = userInfo
+    }
+    // 加载图标配置
+    this.loadIcons()
+  },
+
+  /**
+   * 从服务器获取最新图标配置
+   */
+  async loadIcons() {
+    try {
+      const icons = await this.request({ url: '/icons?client=user' })
+      this.globalData.icons = icons
+      // 缓存到本地
+      wx.setStorageSync('user_icons', icons)
+      // 通知 tabbar 更新
+      if (typeof this.getTabBar === 'function') {
+        const tabbar = this.getTabBar()
+        if (tabbar) tabbar.updateIcons()
+      }
+    } catch (e) {
+      // 从缓存恢复
+      const cached = wx.getStorageSync('user_icons')
+      if (cached) this.globalData.icons = cached
     }
   },
 

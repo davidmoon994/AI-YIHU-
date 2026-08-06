@@ -24,6 +24,7 @@ const escortRoutes = require("./routes/escort");
 const aiRoutes = require("./routes/ai");
 const messageRoutes = require("./routes/message");
 const adminRoutes = require("./routes/admin");
+const iconRoutes = require("./routes/icon");
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use(`${API_PREFIX}/escort`, escortRoutes);
 app.use(`${API_PREFIX}/ai`, aiRoutes);
 app.use(`${API_PREFIX}/message`, messageRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
+app.use(`${API_PREFIX}/icons`, iconRoutes);
 
 // 健康检查
 app.get("/healthz", (req, res) => {
@@ -77,6 +79,9 @@ app.get("/admin", (req, res) => {
 
 // 上传文件静态访问
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// 默认图标静态访问
+app.use("/default-icons", express.static(path.join(__dirname, "default-icons")));
 
 // ===== 404 与全局错误处理（必须放在所有路由之后）=====
 app.use(notFoundHandler);
