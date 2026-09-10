@@ -1,11 +1,11 @@
 <template>
   <div class="escorts-page">
-    <h2>陪诊员管理</h2>
+    <h2>服务人员管理</h2>
 
     <!-- 顶部操作栏 -->
     <el-row :gutter="16" style="margin-bottom: 16px;">
       <el-col :span="6">
-        <el-input v-model="searchPhone" placeholder="搜索手机号" clearable @clear="loadList" @keyup.enter.native="loadList">
+        <el-input v-model="searchPhone" placeholder="搜索服务人员手机号" clearable @clear="loadList" @keyup.enter.native="loadList">
           <el-button slot="append" icon="el-icon-search" @click="loadList"></el-button>
         </el-input>
       </el-col>
@@ -16,11 +16,11 @@
         </el-select>
       </el-col>
       <el-col :span="14" style="text-align: right;">
-        <el-button type="primary" icon="el-icon-plus" @click="showCreateDialog = true">新增陪诊员</el-button>
+        <el-button type="primary" icon="el-icon-plus" @click="showCreateDialog = true">新增服务人员</el-button>
       </el-col>
     </el-row>
 
-    <!-- 陪诊员列表 -->
+    <!-- 服务人员列表 -->
     <el-table :data="list" border stripe v-loading="loading" style="width: 100%;">
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column prop="name" label="姓名" width="100" />
@@ -62,8 +62,8 @@
       @current-change="loadList"
     />
 
-    <!-- 新增陪诊员弹窗 -->
-    <el-dialog title="新增陪诊员" :visible.sync="showCreateDialog" width="500px" @close="resetForm">
+    <!-- 新增服务人员弹窗 -->
+    <el-dialog title="新增服务人员" :visible.sync="showCreateDialog" width="500px" @close="resetForm">
       <el-form :model="form" label-width="90px">
         <el-form-item label="姓名" required>
           <el-input v-model="form.name" />
@@ -94,7 +94,7 @@
     </el-dialog>
 
     <!-- 详情弹窗 -->
-    <el-dialog title="陪诊员详情" :visible.sync="showDetailDialog" width="500px">
+    <el-dialog title="服务人员详情" :visible.sync="showDetailDialog" width="500px">
       <el-descriptions :column="1" border v-if="detailData">
         <el-descriptions-item label="ID">{{ detailData.id }}</el-descriptions-item>
         <el-descriptions-item label="姓名">{{ detailData.name }}</el-descriptions-item>
@@ -163,7 +163,7 @@ export default {
         this.list = data.list || []
         this.total = data.total || 0
       } catch (e) {
-        this.$message.error('加载陪诊员列表失败')
+        this.$message.error('加载服务人员列表失败')
       } finally {
         this.loading = false
       }

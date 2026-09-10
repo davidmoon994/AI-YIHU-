@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard">
-    <h2>社区运营总览</h2>
+    <h2>家庭服务平台运营总览</h2>
 
     <!-- 核心数据卡片 -->
     <el-row :gutter="20" style="margin-bottom: 20px;">
@@ -23,7 +23,7 @@
       <el-col :span="6">
         <el-card shadow="hover">
           <div class="stat-card">
-            <div class="stat-label">在线陪诊员</div>
+            <div class="stat-label">在线服务人员</div>
             <div class="stat-value">{{ data.onlineEscorts }}</div>
           </div>
         </el-card>
@@ -59,7 +59,7 @@
       <el-col :span="8">
         <el-card shadow="hover">
           <div class="stat-card">
-            <div class="stat-label">陪诊员平均评分</div>
+            <div class="stat-label">服务人员平均评分</div>
             <div class="stat-value">{{ escortStats.avgRating ? Number(escortStats.avgRating).toFixed(2) : '-' }}</div>
           </div>
         </el-card>
@@ -141,7 +141,7 @@ export default {
         const res = await axios.get(`${API_BASE}/statistics/escort`)
         this.escortStats = res.data.data || {}
       } catch (e) {
-        console.error('加载陪诊员统计失败', e)
+        console.error('加载服务人员统计失败', e)
       }
     },
 

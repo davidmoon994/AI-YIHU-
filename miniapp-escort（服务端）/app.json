@@ -1,0 +1,41 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/order/order",
+    "pages/task/task",
+    "pages/learn/learn",
+    "pages/wallet/wallet",
+    "pages/profile/profile",
+    "pages/task-detail/task-detail",
+    "pages/login/login"
+  ],
+  "window": {
+    "navigationBarTitleText": "家庭服务端",
+    "navigationBarBackgroundColor": "#1677ff",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f5f5"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#999",
+    "selectedColor": "#1677ff",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/order/order",
+        "text": "订单"
+      },
+      {
+        "pagePath": "pages/task/task",
+        "text": "服务"
+      },
+      {
+        "pagePath": "pages/wallet/wallet",
+        "text": "钱包"
+      }
+    ]
+  }
+}

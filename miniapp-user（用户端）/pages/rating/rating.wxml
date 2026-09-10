@@ -1,0 +1,15 @@
+<view class="page">
+  <view class="card">
+    <view class="title">评价本次服务</view>
+    <view class="service">{{serviceLabel}} · 订单 #{{orderId}}</view>
+    <view class="score-title">服务满意度</view>
+    <view class="stars">
+      <text wx:for="{{stars}}" wx:key="*this" class="star {{item <= score ? 'active' : ''}}" data-score="{{item}}" bindtap="chooseScore">★</text>
+    </view>
+    <view class="score-text">{{score}} 星</view>
+    <textarea class="content" maxlength="500" placeholder="说说本次服务体验（选填）" value="{{content}}" bindinput="onContentInput"></textarea>
+    <view class="anonymous-row" bindtap="toggleAnonymous"><text class="check">{{anonymous ? '☑' : '☐'}}</text><text>匿名评价</text></view>
+    <view wx:if="{{hasRated}}" class="done">该订单已经评价过了</view>
+    <view wx:else class="submit" bindtap="submit">{{submitting ? '提交中...' : '提交评价'}}</view>
+  </view>
+</view>

@@ -25,8 +25,8 @@
   },
   "compileType": "miniprogram",
   "miniprogramRoot": "./",
-  "projectname": "AI陪诊-用户端",
-  "appid": "touristappid",
+  "projectname": "居民服务-用户端",
+  "appid": "wxce306b36ada907da",
   "simulatorPluginLibVersion": {},
   "packOptions": {
     "ignore": [],

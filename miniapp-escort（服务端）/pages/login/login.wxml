@@ -1,0 +1,9 @@
+<view class="page">
+  <view class="card">
+    <view class="title">服务人员登录</view>
+    <view class="sub">登录后管理您的家庭服务订单</view>
+    <input class="input" type="number" maxlength="11" placeholder="请输入手机号" value="{{phone}}" bindinput="onPhoneInput" />
+    <input class="input" password placeholder="请输入密码" value="{{password}}" bindinput="onPasswordInput" />
+    <button class="btn" loading="{{loading}}" disabled="{{loading}}" bindtap="submit">登录</button>
+  </view>
+</view>

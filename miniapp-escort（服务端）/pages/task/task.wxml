@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="page-title">我的任务</view>
+  <block wx:if="{{orders.length > 0}}">
+    <view class="task-card" wx:for="{{orders}}" wx:key="id">
+      <view class="task-header"><view><text class="task-hospital">{{item.serviceIcon}} {{item.serviceLabel}}</text><text class="task-no">{{item.order_no}}</text></view><view class="task-status task-status-{{item.order_status}}">{{item.order_status === 'assigned' ? '待服务' : item.order_status === 'arrived' ? '已确认' : item.order_status === 'serving' ? '服务中' : item.order_status === 'completed' ? '已完成' : item.order_status}}</view></view>
+      <view class="task-info"><text>👤 {{item.objectName}} {{item.objectPhone}}</text></view>
+      <view class="task-info"><text>📍 {{item.locationText}}</text></view>
+      <view class="task-info"><text>🕐 {{item.appointment_time || '待定'}}</text></view>
+      <view class="task-info"><text>💰 ¥{{item.payable_amount}}</text></view>
+      <view class="flow-title">{{item.serviceLabel}}服务流程</view>
+      <view class="progress-bar"><block wx:for="{{item.flowSteps}}" wx:key="index"><view class="step {{index <= item.activeIndex ? 'done' : ''}}">{{item}}</view><view wx:if="{{index < 3}}" class="step-line {{index < item.activeIndex ? 'done' : ''}}"></view></block></view>
+      <view class="confirm-box" wx:if="{{item.order_status === 'arrived' || item.order_status === 'serving'}}">
+        <view class="confirm-status">服务前确认：{{item.hasPreConfirm ? '已完成' : '待确认'}}</view>
+        <button wx:if="{{!item.hasPreConfirm && item.order_status === 'arrived'}}" class="btn-secondary" bindtap="confirmStage" data-id="{{item.id}}" data-stage="pre_service">服务前确认</button>
+        <button wx:if="{{item.handoverRequired && item.order_status === 'serving' && !item.hasHandoverConfirm}}" class="btn-secondary" bindtap="confirmStage" data-id="{{item.id}}" data-stage="handover_complete">{{item.handoverText}}</button>
+        <view wx:if="{{item.handoverRequired && item.order_status === 'serving'}}" class="confirm-status">交接：{{item.hasHandoverConfirm ? '已确认' : '待确认'}}</view>
+      </view>
+      <view class="task-actions">
+        <button wx:if="{{item.order_status === 'assigned'}}" class="btn-primary" bindtap="arrive" data-id="{{item.id}}">{{item.arriveText}}</button>
+        <button wx:if="{{item.order_status === 'arrived' && item.hasPreConfirm}}" class="btn-primary" bindtap="startService" data-id="{{item.id}}">{{item.startText}}</button>
+        <block wx:if="{{item.order_status === 'serving'}}"><button class="btn-secondary" bindtap="uploadPhoto" data-id="{{item.id}}">上传凭证并完成</button><button wx:if="{{!item.handoverRequired || item.hasHandoverConfirm}}" class="btn-primary" bindtap="finishService" data-id="{{item.id}}">{{item.finishText}}</button></block>
+      </view>
+    </view>
+  </block>
+  <view class="empty" wx:if="{{!loading && orders.length === 0}}"><text class="empty-icon">📋</text><text class="empty-text">暂无进行中的任务</text><text class="empty-sub">接单后将在此显示</text></view>
+</view>

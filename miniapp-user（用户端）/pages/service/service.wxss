@@ -349,3 +349,5 @@
   font-weight: bold;
   margin-top: 20rpx;
 }
+
+.form-card{background:#fff;border-radius:20rpx;padding:8rpx 24rpx;margin-bottom:24rpx}.form-group{margin:20rpx 0}.field-label{font-size:28rpx;font-weight:600;margin-bottom:14rpx;color:#333}.required{color:#e54d42}.tips-box{background:#f5f8ff;color:#667085;padding:22rpx;border-radius:16rpx;font-size:25rpx;line-height:1.6}.confirm-row{display:flex;justify-content:space-between;gap:24rpx;padding:24rpx 0;border-bottom:1rpx solid #f0f0f0}.confirm-label{color:#8a8a8a;min-width:160rpx}.confirm-value{color:#333;text-align:right;flex:1;word-break:break-all}

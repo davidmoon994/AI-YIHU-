@@ -6,13 +6,14 @@ const jwtUtil = require("../utils/jwt");
 const { BizError } = require("../middleware/error");
 const { ORDER_STATUS, ROLE, BIZ_CODE } = require("../utils/constants");
 const orderService = require("./orderService");
+const settlementService = require("./settlementService");
 
 const SALT_ROUNDS = 10;
 
 async function login(phone, password) {
   const rows = await db.query("SELECT * FROM escorts WHERE phone = ? LIMIT 1", [phone]);
   if (rows.length === 0) {
-    throw new BizError(BIZ_CODE.ESCORT_NOT_FOUND, "陪诊员不存在");
+    throw new BizError(BIZ_CODE.ESCORT_NOT_FOUND, "服务人员不存在");
   }
   const escort = rows[0];
 
@@ -28,7 +29,7 @@ async function login(phone, password) {
 async function getDashboard(escortId) {
   const rows = await db.query("SELECT * FROM escorts WHERE id = ? LIMIT 1", [escortId]);
   if (rows.length === 0) {
-    throw new BizError(BIZ_CODE.ESCORT_NOT_FOUND, "陪诊员不存在");
+    throw new BizError(BIZ_CODE.ESCORT_NOT_FOUND, "服务人员不存在");
   }
   const escort = rows[0];
 
@@ -63,11 +64,11 @@ async function getCurrentOrders(escortId) {
 
 async function arriveOrder(escortId, orderId) {
   return db.transaction(async (conn) => {
-    await orderService.transitionStatus(conn, orderId, [ORDER_STATUS.ASSIGNED], ORDER_STATUS.ARRIVED, "陪诊员到达");
-    const [check] = await conn.query("SELECT escort_id FROM orders WHERE id = ?", [orderId]);
-    if (check[0].escort_id !== escortId) {
+    const [check] = await conn.query("SELECT escort_id FROM orders WHERE id = ? LIMIT 1 FOR UPDATE", [orderId]);
+    if (!check.length || Number(check[0].escort_id) !== Number(escortId)) {
       throw new BizError(403, "无权限操作该订单");
     }
+    await orderService.transitionStatus(conn, orderId, [ORDER_STATUS.ASSIGNED], ORDER_STATUS.ARRIVED, "服务人员到达");
   });
 }
 
@@ -89,6 +90,8 @@ async function finishService(escortId, orderId, images) {
     }
     await orderService.transitionStatus(conn, orderId, [ORDER_STATUS.SERVING], ORDER_STATUS.COMPLETED, "服务完成");
     await conn.query("UPDATE orders SET completed_at = NOW() WHERE id = ?", [orderId]);
+    // 服务完成后立即生成平台内部结算记录；仅记账，不执行真实打款。
+    await settlementService.createSettlementForOrder(orderId, conn);
     await conn.query(
       "UPDATE escorts SET work_status = 'idle', total_orders = total_orders + 1, completed_orders = completed_orders + 1 WHERE id = ?",
       [escortId]
@@ -117,19 +120,8 @@ async function updateOnlineStatus(escortId, status) {
   return { escortId, status };
 }
 
-async function getIncome(escortId, { startDate, endDate }) {
-  const params = [escortId];
-  let where = "WHERE escort_id = ? AND order_status = 'completed'";
-  if (startDate) {
-    where += " AND completed_at >= ?";
-    params.push(startDate);
-  }
-  if (endDate) {
-    where += " AND completed_at <= ?";
-    params.push(endDate);
-  }
-  const rows = await db.query(`SELECT COUNT(*) as orderCount, COALESCE(SUM(paid_amount),0) as totalIncome FROM orders ${where}`, params);
-  return rows[0];
+async function getIncome(escortId, options) {
+  return settlementService.getEscortIncome(escortId, options);
 }
 
 function sanitize(escort) {

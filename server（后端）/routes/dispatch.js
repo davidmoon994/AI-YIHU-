@@ -33,13 +33,23 @@ router.post(
   requireBody(["orderId", "escortId"]),
   async (req, res, next) => {
     try {
-      const result = await dispatchService.manualDispatch(req.user.userId, req.body.orderId, req.body.escortId);
+      const result = await dispatchService.manualDispatch(req.user.userId, req.body.orderId, req.body.escortId, { role: req.user.role, communityId: req.user.communityId });
       return success(res, result);
     } catch (err) {
       return next(err);
     }
   }
 );
+
+// GET /api/v1/dispatch/eligible-escorts —— 查询订单可人工派单的服务人员
+router.get("/eligible-escorts", requireRole(ROLE.SUPER_ADMIN, ROLE.COMMUNITY_ADMIN), requireQuery(["orderId"]), async (req, res, next) => {
+  try {
+    const list = await dispatchService.getEligibleEscorts(req.query.orderId, req.user.role, req.user.communityId);
+    return success(res, list);
+  } catch (err) {
+    return next(err);
+  }
+});
 
 // GET /api/v1/dispatch/list
 router.get("/list", requireQuery(["orderId"]), async (req, res, next) => {

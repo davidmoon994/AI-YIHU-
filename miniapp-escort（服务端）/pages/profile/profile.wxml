@@ -1,0 +1,59 @@
+<view class="page">
+  <view class="hero">
+    <view class="avatar-wrap">
+      <image class="avatar" src="{{profile.avatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+    </view>
+    <view class="hero-info">
+      <text class="name">{{profile.name || '服务人员'}}</text>
+      <text class="phone">{{profile.phone || ''}}</text>
+      <text class="hint">完善资料有助于匹配合适的服务订单</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">服务能力</view>
+    <view class="section-subtitle">请选择你可以稳定提供的服务项目</view>
+    <view class="skill-grid">
+      <view
+        wx:for="{{serviceOptions}}"
+        wx:key="value"
+        class="skill-item {{selectedSkills.indexOf(item.value) >= 0 ? 'selected' : ''}}"
+        data-value="{{item.value}}"
+        bindtap="toggleSkill"
+      >
+        <text class="skill-icon">{{item.icon}}</text>
+        <text class="skill-name">{{item.label}}</text>
+        <text class="skill-status" wx:if="{{profile.skills && profile.skills.length}}">
+          {{getSkillStatus(item.value) === 'approved' ? '已认证' : getSkillStatus(item.value) === 'pending' ? '审核中' : ''}}
+        </text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">个人服务资料</view>
+    <view class="field">
+      <text class="label">服务经验</text>
+      <view class="input-row">
+        <input class="input small" type="number" maxlength="2" value="{{experienceYears}}" bindinput="onExperienceInput" />
+        <text class="unit">年</text>
+      </view>
+    </view>
+    <view class="field">
+      <text class="label">主要服务区域</text>
+      <input class="input" maxlength="100" placeholder="例如：XX区、XX街道及周边" value="{{serviceArea}}" bindinput="onAreaInput" />
+    </view>
+    <view class="field">
+      <text class="label">服务介绍</text>
+      <textarea class="textarea" maxlength="300" placeholder="介绍你的服务经验、擅长方向和服务特点" value="{{bio}}" bindinput="onBioInput" />
+      <text class="counter">{{bio.length}}/300</text>
+    </view>
+  </view>
+
+  <view class="notice">
+    <text class="notice-title">认证说明</text>
+    <text class="notice-text">你选择的服务能力会提交平台审核。审核通过后，系统才会优先为你匹配对应类型的服务订单。</text>
+  </view>
+
+  <button class="save-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="save">{{saving ? '保存中...' : '保存服务资料'}}</button>
+</view>

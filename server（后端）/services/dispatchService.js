@@ -46,10 +46,22 @@ async function selectCandidates(order, excludeEscortIds = []) {
     : "";
 
   const candidates = await db.query(
-    `SELECT * FROM escorts
-     WHERE community_id = ? AND status = 'online' AND work_status = 'idle'
+    `SELECT e.* FROM escorts e
+     WHERE e.community_id = ? AND e.status = 'online' AND e.work_status = 'idle'
+       AND e.is_deleted = 0
+       AND (
+         NOT EXISTS (SELECT 1 FROM escort_service_skills s0 WHERE s0.escort_id = e.id)
+         OR EXISTS (
+           SELECT 1 FROM escort_service_skills s
+           WHERE s.escort_id = e.id
+             AND s.service_type = ?
+             AND s.approval_status = 'approved'
+         )
+       )
      ${excludeClause}`,
-    excludeEscortIds.length > 0 ? [order.community_id, ...excludeEscortIds] : [order.community_id]
+    excludeEscortIds.length > 0
+      ? [order.community_id, order.service_type, ...excludeEscortIds]
+      : [order.community_id, order.service_type]
   );
 
   const withDistance = candidates.map((c) => ({
@@ -172,6 +184,18 @@ async function acceptDispatch(escortId, dispatchRecordId) {
       throw new BizError(409, "该订单已被处理，接单失败");
     }
 
+    const [orderRows] = await conn.query("SELECT community_id, service_type FROM orders WHERE id = ? LIMIT 1", [record.order_id]);
+    if (orderRows.length === 0) throw new BizError(404, "订单不存在");
+    const order = orderRows[0];
+    const [skillRows] = await conn.query("SELECT approval_status FROM escort_service_skills WHERE escort_id = ?", [escortId]);
+    if (skillRows.length > 0) {
+      const [approved] = await conn.query(
+        "SELECT id FROM escort_service_skills WHERE escort_id = ? AND service_type = ? AND approval_status = 'approved' LIMIT 1",
+        [escortId, order.service_type]
+      );
+      if (approved.length === 0) throw new BizError(403, "当前服务能力尚未通过审核，无法接该类订单");
+    }
+
     const [orderUpdateResult] = await conn.query(
       "UPDATE orders SET order_status = ?, escort_id = ?, updated_at = NOW() WHERE id = ? AND order_status = ?",
       [ORDER_STATUS.ASSIGNED, escortId, record.order_id, ORDER_STATUS.DISPATCHING]
@@ -235,15 +259,40 @@ async function rejectDispatch(escortId, dispatchRecordId) {
 /**
  * 人工派单：管理员指定陪诊员，优先级高于自动派单
  */
-async function manualDispatch(adminId, orderId, escortId) {
+async function manualDispatch(adminId, orderId, escortId, adminContext = {}) {
   return db.transaction(async (conn) => {
     const [orders] = await conn.query("SELECT * FROM orders WHERE id = ? LIMIT 1 FOR UPDATE", [orderId]);
-    if (orders.length === 0) {
-      throw new BizError(BIZ_CODE.ORDER_NOT_FOUND, "订单不存在");
-    }
+    if (orders.length === 0) throw new BizError(BIZ_CODE.ORDER_NOT_FOUND, "订单不存在");
     const order = orders[0];
     if (![ORDER_STATUS.DISPATCHING, ORDER_STATUS.ASSIGNED].includes(order.order_status)) {
       throw new BizError(409, "当前订单状态不支持人工派单");
+    }
+
+    const [escorts] = await conn.query(
+      "SELECT id, community_id, status, work_status, is_deleted FROM escorts WHERE id = ? LIMIT 1",
+      [escortId]
+    );
+    if (escorts.length === 0 || Number(escorts[0].is_deleted) === 1) throw new BizError(404, "服务人员不存在");
+    const escort = escorts[0];
+    if (String(escort.community_id) !== String(order.community_id)) {
+      throw new BizError(403, "不能跨社区派单");
+    }
+    if (adminContext.role !== "SUPER_ADMIN" && String(adminContext.communityId) !== String(order.community_id)) {
+      throw new BizError(403, "无权操作其他社区订单");
+    }
+    if (escort.status !== "online" || escort.work_status !== "idle") {
+      throw new BizError(409, "该服务人员当前不在线或正在服务中");
+    }
+
+    const [skillRows] = await conn.query("SELECT approval_status FROM escort_service_skills WHERE escort_id = ?", [escortId]);
+    if (skillRows.length > 0) {
+      const [approved] = await conn.query(
+        "SELECT id FROM escort_service_skills WHERE escort_id = ? AND service_type = ? AND approval_status = 'approved' LIMIT 1",
+        [escortId, order.service_type]
+      );
+      if (approved.length === 0) {
+        throw new BizError(403, "该服务人员尚未通过当前服务类型认证，不能人工派单");
+      }
     }
 
     await conn.query(
@@ -273,6 +322,16 @@ async function manualDispatch(adminId, orderId, escortId) {
   });
 }
 
+async function getEligibleEscorts(orderId, role, communityId) {
+  const orders = await db.query("SELECT id, community_id, service_type, latitude, longitude FROM orders WHERE id = ? LIMIT 1", [orderId]);
+  if (orders.length === 0) throw new BizError(404, "订单不存在");
+  const order = orders[0];
+  if (role !== "SUPER_ADMIN" && String(order.community_id) !== String(communityId)) {
+    throw new BizError(403, "无权查看其他社区订单的服务人员");
+  }
+  return selectCandidates(order, []);
+}
+
 async function getDispatchList(orderId) {
   return db.query("SELECT * FROM dispatch_records WHERE order_id = ? ORDER BY id DESC", [orderId]);
 }
@@ -297,5 +356,6 @@ module.exports = {
   manualDispatch,
   getDispatchList,
   getNearbyEscorts,
+  getEligibleEscorts,
   calcDistanceMeters
 };

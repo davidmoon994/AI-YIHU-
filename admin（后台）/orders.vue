@@ -26,8 +26,8 @@
       <el-table-column prop="service_type" label="服务类型" width="90">
         <template slot-scope="{ row }">{{ serviceTypeMap[row.service_type] || row.service_type }}</template>
       </el-table-column>
-      <el-table-column prop="hospital_name" label="医院" width="130" show-overflow-tooltip />
-      <el-table-column prop="patient_name" label="就诊人" width="80" />
+      <el-table-column prop="hospital_name" label="服务地点" width="130" show-overflow-tooltip />
+      <el-table-column prop="patient_name" label="服务对象" width="80" />
       <el-table-column label="金额" width="90">
         <template slot-scope="{ row }">¥{{ row.payable_amount }}</template>
       </el-table-column>
@@ -41,7 +41,7 @@
           <el-tag :type="orderStatusType(row.order_status)" size="small">{{ statusLabel(row.order_status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="escort_id" label="陪诊员ID" width="90">
+      <el-table-column prop="escort_id" label="服务人员ID" width="90">
         <template slot-scope="{ row }">{{ row.escort_id || '-' }}</template>
       </el-table-column>
       <el-table-column label="预约时间" width="150">
@@ -54,7 +54,7 @@
             size="mini" type="warning"
             v-if="['dispatching','assigned'].includes(row.order_status)"
             @click="showManualDispatch(row)"
-          >人工派单</el-button>
+          >人工派单（服务人员）</el-button>
           <el-button
             size="mini" type="danger"
             v-if="['pending','dispatching','assigned'].includes(row.order_status)"
@@ -92,21 +92,21 @@
         <el-descriptions-item label="支付金额">¥{{ detailData.paid_amount }}</el-descriptions-item>
         <el-descriptions-item label="应付金额">¥{{ detailData.payable_amount }}</el-descriptions-item>
         <el-descriptions-item label="原始金额">¥{{ detailData.original_amount }}</el-descriptions-item>
-        <el-descriptions-item label="医院">{{ detailData.hospital_name || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="服务地点">{{ detailData.hospital_name || '-' }}</el-descriptions-item>
         <el-descriptions-item label="科室">{{ detailData.department_name || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="就诊人">{{ detailData.patient_name }}</el-descriptions-item>
+        <el-descriptions-item label="服务对象">{{ detailData.patient_name }}</el-descriptions-item>
         <el-descriptions-item label="联系电话">{{ detailData.patient_phone || '-' }}</el-descriptions-item>
         <el-descriptions-item label="服务地址" :span="2">{{ detailData.service_address || '-' }}</el-descriptions-item>
         <el-descriptions-item label="预约时间">{{ detailData.appointment_time || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="陪诊员ID">{{ detailData.escort_id || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="服务人员ID">{{ detailData.escort_id || '-' }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ detailData.created_at }}</el-descriptions-item>
         <el-descriptions-item label="更新时间">{{ detailData.updated_at }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
 
-    <!-- 人工派单弹窗 -->
-    <el-dialog title="人工派单" :visible.sync="showDispatchDialog" width="500px">
+    <!-- 人工派单（服务人员）弹窗 -->
+    <el-dialog title="人工派单（服务人员）" :visible.sync="showDispatchDialog" width="500px">
       <p>为订单 <b>{{ dispatchTarget?.order_no }}</b> 指派陪诊员：</p>
       <el-input-number v-model="dispatchEscortId" :min="1" placeholder="陪诊员ID" style="width: 100%; margin-bottom: 12px;" />
       <el-alert title="请输入陪诊员ID后点击确认派单" type="info" :closable="false" />
@@ -206,7 +206,7 @@ export default {
           orderId: this.dispatchTarget.id,
           escortId: this.dispatchEscortId
         })
-        this.$message.success('人工派单成功')
+        this.$message.success('人工派单（服务人员）成功')
         this.showDispatchDialog = false
         this.loadList()
       } catch (e) {

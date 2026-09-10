@@ -57,7 +57,7 @@
       </view>
       <view class="order-body">
         <view class="order-info">
-          <text>{{item.hospital_name || '未指定医院'}}</text>
+          <text>{{item.hospital_name || '未指定服务地点'}}</text>
         </view>
         <view class="order-info">
           <text>{{item.patient_name || ''}} · {{item.appointment_time || ''}}</text>
@@ -123,11 +123,11 @@
           <text class="detail-value status-{{orderDetail.order_status}}">{{statusMap[orderDetail.order_status] || orderDetail.order_status}}</text>
         </view>
         <view class="detail-row">
-          <text class="detail-label">医院</text>
+          <text class="detail-label">服务地点</text>
           <text class="detail-value">{{orderDetail.hospital_name || '-'}}</text>
         </view>
         <view class="detail-row">
-          <text class="detail-label">就诊人</text>
+          <text class="detail-label">服务对象</text>
           <text class="detail-value">{{orderDetail.patient_name || '-'}}</text>
         </view>
         <view class="detail-row">
@@ -145,6 +145,20 @@
         <view class="detail-row" wx:if="{{orderDetail.remark}}">
           <text class="detail-label">备注</text>
           <text class="detail-value">{{orderDetail.remark}}</text>
+        </view>
+
+        <!-- 服务轨迹：从订单日志实时读取，不改变订单状态逻辑 -->
+        <view class="timeline-section">
+          <view class="timeline-title">服务轨迹</view>
+          <view class="timeline-empty" wx:if="{{orderTimeline.length === 0}}">暂无轨迹记录</view>
+          <view class="timeline-item" wx:for="{{orderTimeline}}" wx:key="id">
+            <view class="timeline-dot {{item.latest ? 'latest' : ''}}"></view>
+            <view class="timeline-content">
+              <view class="timeline-status">{{item.toStatusLabel}}</view>
+              <view class="timeline-time">{{item.createdAt}}</view>
+              <view class="timeline-remark" wx:if="{{item.remark}}">{{item.remark}}</view>
+            </view>
+          </view>
         </view>
 
         <!-- 操作按钮 -->

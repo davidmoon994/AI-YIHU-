@@ -36,6 +36,33 @@ router.post("/login", requireBody(["phone", "password"]), async (req, res, next)
 
 router.use(authenticate, requireRole(ROLE.ESCORT));
 
+router.get("/profile", async (req, res, next) => {
+  try {
+    const result = await escortService.getProfile(req.user.userId);
+    return success(res, result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.put("/profile", async (req, res, next) => {
+  try {
+    const result = await escortService.updateProfile(req.user.userId, req.body || {});
+    return success(res, result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.put("/skills", requireBody(["skills"]), async (req, res, next) => {
+  try {
+    const result = await escortService.updateSkills(req.user.userId, req.body.skills);
+    return success(res, result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 router.get("/dashboard", async (req, res, next) => {
   try {
     const result = await escortService.getDashboard(req.user.userId);
@@ -79,6 +106,22 @@ router.post("/reject", requireBody(["dispatchRecordId"]), async (req, res, next)
   } catch (err) {
     return next(err);
   }
+});
+
+router.get("/order/detail", requireQuery(["orderId"]), async (req, res, next) => {
+  try {
+    const result = await escortService.getOrderDetail(req.user.userId, req.query.orderId);
+    return success(res, result);
+  } catch (err) { return next(err); }
+});
+
+router.post("/confirm", requireBody(["orderId", "stage", "checklist"]), async (req, res, next) => {
+  try {
+    const result = await escortService.confirmServiceStage(
+      req.user.userId, req.body.orderId, req.body.stage, req.body.checklist, req.body.remark
+    );
+    return success(res, result);
+  } catch (err) { return next(err); }
 });
 
 router.post("/arrive", requireBody(["orderId"]), async (req, res, next) => {

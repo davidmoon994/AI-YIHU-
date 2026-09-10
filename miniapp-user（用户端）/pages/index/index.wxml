@@ -6,8 +6,8 @@
       <view class="banner-greeting">
         {{isLogin && profile ? 'Hi, ' + (profile.nickname || '用户') : '欢迎使用'}}
       </view>
-      <view class="banner-title">AI社区就医陪诊服务</view>
-      <view class="banner-sub">让家人看病更轻松 · 专业陪诊更放心</view>
+      <view class="banner-title">AI家庭服务平台</view>
+      <view class="banner-sub">一站式家庭照护 · 服务更安心</view>
     </view>
     <view class="banner-badge" wx:if="{{unreadCount > 0}}" bindtap="goOrders">
       <text>{{unreadCount}}条新消息</text>
@@ -88,15 +88,15 @@
     <view class="info-list">
       <view class="info-item">
         <text class="info-icon">✓</text>
-        <text>专业陪诊师持证上岗，全程陪护</text>
+        <text>专业服务人员规范上岗，全程守护</text>
       </view>
       <view class="info-item">
         <text class="info-icon">✓</text>
-        <text>医院陪同 · 挂号协助 · 检查指引 · 取报告</text>
+        <text>就医陪诊 · 老人陪护 · 儿童托管 · 宠物托管</text>
       </view>
       <view class="info-item">
         <text class="info-icon">✓</text>
-        <text>AI智能分析，就医流程一键规划</text>
+        <text>服务流程透明，订单状态实时可查</text>
       </view>
     </view>
   </view>
@@ -108,28 +108,28 @@
     </view>
     <view class="price-table">
       <view class="price-row">
-        <text class="price-name">标准陪诊</text>
-        <text class="price-val">199元/次</text>
+        <text class="price-name">就医陪诊</text>
+        <text class="price-val">199元起</text>
       </view>
       <view class="price-row">
-        <text class="price-name">代挂号</text>
+        <text class="price-name">老人陪护</text>
+        <text class="price-val">199元起</text>
+      </view>
+      <view class="price-row">
+        <text class="price-name">儿童托管</text>
+        <text class="price-val">159元起</text>
+      </view>
+      <view class="price-row">
+        <text class="price-name">宠物托管</text>
         <text class="price-val">99元起</text>
-      </view>
-      <view class="price-row">
-        <text class="price-name">接送服务</text>
-        <text class="price-val">50元起</text>
-      </view>
-      <view class="price-row">
-        <text class="price-name">就医规划</text>
-        <text class="price-val">29元起</text>
       </view>
     </view>
   </view>
 
   <!-- 底部CTA -->
   <view class="bottom-bar">
-    <view class="cta" bindtap="goService" data-type="escort">
-      立即预约陪诊
+    <view class="cta" bindtap="goService" data-type="medical_escort">
+      立即预约服务
     </view>
   </view>
 

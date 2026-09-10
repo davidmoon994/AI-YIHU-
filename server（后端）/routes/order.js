@@ -4,6 +4,7 @@ const express = require("express");
 const router = express.Router();
 
 const orderService = require("../services/orderService");
+const lifecycleService = require("../services/orderLifecycleService");
 const { success, successPage } = require("../utils/response");
 const { authenticate } = require("../middleware/auth");
 const { requireBody, requireQuery } = require("../middleware/validator");
@@ -36,6 +37,12 @@ router.get("/list", async (req, res, next) => {
 });
 
 // GET /api/v1/order/detail
+router.get("/timeline", requireQuery(["orderId"]), async (req, res, next) => {
+  try {
+    return success(res, await lifecycleService.getTimeline(req.query.orderId, req.user.userId, false));
+  } catch (err) { return next(err); }
+});
+
 router.get("/detail", requireQuery(["orderId"]), async (req, res, next) => {
   try {
     const order = await orderService.getOrderDetail(req.user.userId, req.query.orderId);

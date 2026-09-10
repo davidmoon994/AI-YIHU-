@@ -25,6 +25,7 @@ const aiRoutes = require("./routes/ai");
 const messageRoutes = require("./routes/message");
 const adminRoutes = require("./routes/admin");
 const iconRoutes = require("./routes/icon");
+const ratingRoutes = require("./routes/rating");
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use(`${API_PREFIX}/ai`, aiRoutes);
 app.use(`${API_PREFIX}/message`, messageRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
 app.use(`${API_PREFIX}/icons`, iconRoutes);
+app.use(`${API_PREFIX}/rating`, ratingRoutes);
 
 // 健康检查
 app.get("/healthz", (req, res) => {

@@ -44,17 +44,21 @@ router.post("/login", requireBody(["username", "password"]), async (req, res, ne
     const jwtUtil = require("../utils/jwt");
     const rows = await db.query("SELECT * FROM admins WHERE username = ? LIMIT 1", [req.body.username]);
     if (rows.length === 0) {
+      await adminService.writeLoginLog(null, req.body.username, req, "failure", "账号不存在");
       throw new BizError(401, "用户名或密码错误");
     }
     const admin = rows[0];
     if (admin.status === 0) {
+      await adminService.writeLoginLog(admin.id, admin.username, req, "failure", "账号已禁用");
       throw new BizError(403, "账号已被禁用");
     }
     const ok = await bcrypt.compare(req.body.password, admin.password_hash);
     if (!ok) {
+      await adminService.writeLoginLog(admin.id, admin.username, req, "failure", "密码错误");
       throw new BizError(401, "用户名或密码错误");
     }
     await db.query("UPDATE admins SET last_login_at = NOW() WHERE id = ?", [admin.id]);
+    await adminService.writeLoginLog(admin.id, admin.username, req, "success");
     const token = jwtUtil.sign({ userId: admin.id, role: admin.role, communityId: admin.community_id });
     return success(res, {
       token,
@@ -66,6 +70,16 @@ router.post("/login", requireBody(["username", "password"]), async (req, res, ne
 });
 
 router.use(authenticate, requireRole(ROLE.SUPER_ADMIN, ROLE.COMMUNITY_ADMIN));
+
+// 阶段23：管理员权限模型固定为两级
+// SUPER_ADMIN：拥有全部后台管理权限
+// COMMUNITY_ADMIN：仅可读取自己所属社区范围的数据，禁止任何写操作
+router.use((req, res, next) => {
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method) && req.user.role !== ROLE.SUPER_ADMIN) {
+    return next(new BizError(403, "社区管理员为只读账号，无权修改后台数据"));
+  }
+  next();
+});
 
 // ===== Dashboard =====
 router.get("/dashboard", enforceCommunityScope, async (req, res, next) => {
@@ -88,7 +102,7 @@ router.get("/users", enforceCommunityScope, async (req, res, next) => {
   }
 });
 
-router.get("/users/detail", requireQuery(["userId"]), async (req, res, next) => {
+router.get("/users/detail", enforceCommunityScope, requireQuery(["userId"]), async (req, res, next) => {
   try {
     const rows = await db.query("SELECT * FROM users WHERE id = ? LIMIT 1", [req.query.userId]);
     if (rows.length === 0) throw new BizError(404, "用户不存在");
@@ -129,7 +143,7 @@ router.get("/escorts", enforceCommunityScope, async (req, res, next) => {
   }
 });
 
-router.get("/escorts/detail", requireQuery(["escortId"]), async (req, res, next) => {
+router.get("/escorts/detail", enforceCommunityScope, requireQuery(["escortId"]), async (req, res, next) => {
   try {
     const rows = await db.query("SELECT * FROM escorts WHERE id = ? LIMIT 1", [req.query.escortId]);
     if (rows.length === 0) throw new BizError(404, "陪诊员不存在");
@@ -180,7 +194,7 @@ router.get("/orders", enforceCommunityScope, async (req, res, next) => {
   }
 });
 
-router.get("/orders/detail", requireQuery(["orderId"]), async (req, res, next) => {
+router.get("/orders/detail", enforceCommunityScope, requireQuery(["orderId"]), async (req, res, next) => {
   try {
     const orderService = require("../services/orderService");
     const order = await orderService.getOrderDetail(null, req.query.orderId, true);
@@ -227,10 +241,71 @@ router.post("/orders/refund", requireBody(["orderId"]), async (req, res, next) =
   }
 });
 
-// ===== 社区管理 =====
-router.get("/communities", requireRole(ROLE.SUPER_ADMIN), async (req, res, next) => {
+// ===== 后台管理员管理（仅超级管理员） =====
+router.get("/admins", requireRole(ROLE.SUPER_ADMIN), async (req, res, next) => {
   try {
-    const list = await adminService.listCommunities();
+    const { page = 1, pageSize = 20, keyword, role, status, communityId } = req.query;
+    const result = await adminService.listAdmins({ page, pageSize, keyword, role, status, communityId });
+    return successPage(res, result.list, page, pageSize, result.total);
+  } catch (err) { return next(err); }
+});
+
+router.post("/admins/create", requireRole(ROLE.SUPER_ADMIN), requireBody(["username", "password", "role"]), async (req, res, next) => {
+  try {
+    const result = await adminService.createAdmin(req.body);
+    await adminService.writeOperationLog(req.user.userId, "admin", "create", req, "success");
+    return success(res, result);
+  } catch (err) { return next(err); }
+});
+
+router.put("/admins/update", requireRole(ROLE.SUPER_ADMIN), requireBody(["id", "role"]), async (req, res, next) => {
+  try {
+    if (Number(req.body.id) === Number(req.user.userId) && req.body.role !== ROLE.SUPER_ADMIN) {
+      throw new BizError(400, "不能降级当前登录的超级管理员账号");
+    }
+    const result = await adminService.updateAdmin(req.body);
+    await adminService.writeOperationLog(req.user.userId, "admin", "update", req, "success");
+    return success(res, result);
+  } catch (err) { return next(err); }
+});
+
+router.post("/admins/status", requireRole(ROLE.SUPER_ADMIN), requireBody(["id", "status"]), async (req, res, next) => {
+  try {
+    const result = await adminService.setAdminStatus(req.user.userId, req.body.id, req.body.status);
+    await adminService.writeOperationLog(req.user.userId, "admin", Number(req.body.status) ? "enable" : "disable", req, "success");
+    return success(res, result);
+  } catch (err) { return next(err); }
+});
+
+router.post("/admins/reset-password", requireRole(ROLE.SUPER_ADMIN), requireBody(["id", "password"]), async (req, res, next) => {
+  try {
+    const result = await adminService.resetAdminPassword(req.body.id, req.body.password);
+    await adminService.writeOperationLog(req.user.userId, "admin", "reset_password", req, "success");
+    return success(res, result);
+  } catch (err) { return next(err); }
+});
+
+// ===== 超级管理员：安全审计与操作日志 =====
+router.get("/security/stats", requireRole(ROLE.SUPER_ADMIN), async (req, res, next) => {
+  try {
+    const data = await adminService.getAdminSecurityStats(req.query.communityId);
+    return success(res, data);
+  } catch (err) { return next(err); }
+});
+
+router.get("/operation-logs", requireRole(ROLE.SUPER_ADMIN), async (req, res, next) => {
+  try {
+    const { page = 1, pageSize = 20, keyword, adminId, module, action, result, startDate, endDate, communityId } = req.query;
+    const data = await adminService.listOperationLogs({ page, pageSize, keyword, adminId, module, action, result, startDate, endDate, communityId });
+    return successPage(res, data.list, page, pageSize, data.total);
+  } catch (err) { return next(err); }
+});
+
+// ===== 社区管理 =====
+router.get("/communities", async (req, res, next) => {
+  try {
+    const communityId = req.user.role === ROLE.COMMUNITY_ADMIN ? req.user.communityId : req.query.communityId;
+    const list = await adminService.listCommunities(communityId);
     return success(res, list);
   } catch (err) {
     return next(err);

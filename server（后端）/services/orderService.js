@@ -22,6 +22,11 @@ function generateOrderNo() {
  */
 async function getServicePrice(serviceType) {
   const keyMap = {
+    [SERVICE_TYPE.MEDICAL_ESCORT]: "price_medical_escort_base",
+    [SERVICE_TYPE.ELDERLY_CARE]: "price_elderly_care_base",
+    [SERVICE_TYPE.CHILD_CARE]: "price_child_care_base",
+    [SERVICE_TYPE.PET_CARE]: "price_pet_care_base",
+    // 历史服务类型继续保留，避免旧订单/旧客户端失效
     [SERVICE_TYPE.ESCORT]: "price_escort_base",
     [SERVICE_TYPE.REGISTER]: "price_register_base",
     [SERVICE_TYPE.PICKUP]: "price_pickup_base",

@@ -1,0 +1,37 @@
+.page { background: #f5f5f5; min-height: 100vh; padding-bottom: 40rpx; }
+.page-title { font-size: 36rpx; font-weight: bold; color: #333; padding: 24rpx; }
+
+/* 任务卡片 */
+.task-card { background: #fff; margin: 0 20rpx 20rpx; border-radius: 16rpx; padding: 24rpx; box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05); }
+.task-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16rpx; }
+.task-hospital { font-size: 30rpx; font-weight: bold; color: #333; display: block; }
+.task-no { font-size: 22rpx; color: #999; display: block; margin-top: 4rpx; }
+.task-status { font-size: 22rpx; color: #fff; padding: 4rpx 16rpx; border-radius: 20rpx; }
+.task-status-assigned { background: #faad14; }
+.task-status-arrived { background: #1677ff; }
+.task-status-serving { background: #52c41a; }
+
+.task-info { font-size: 24rpx; color: #666; margin-bottom: 8rpx; }
+
+/* 进度条 */
+.progress-bar { display: flex; align-items: center; justify-content: center; padding: 24rpx 0; }
+.step { font-size: 22rpx; color: #ccc; padding: 8rpx 16rpx; border-radius: 20rpx; background: #f5f5f5; }
+.step.done { color: #fff; background: #52c41a; }
+.step-line { width: 30rpx; height: 4rpx; background: #e8e8e8; margin: 0 4rpx; }
+.step-line.done { background: #52c41a; }
+
+/* 操作按钮 */
+.task-actions { display: flex; gap: 16rpx; margin-top: 16rpx; }
+.btn-primary, .btn-secondary { flex: 1; padding: 20rpx 0; border-radius: 12rpx; text-align: center; font-size: 28rpx; border: none; }
+.btn-primary { background: #1677ff; color: #fff; font-weight: bold; }
+.btn-secondary { background: #f0f5ff; color: #1677ff; border: 2rpx solid #1677ff; }
+
+/* 空状态 */
+.empty { text-align: center; padding: 120rpx 20rpx; }
+.empty-icon { font-size: 80rpx; display: block; }
+.empty-text { font-size: 30rpx; color: #999; display: block; margin-top: 20rpx; }
+.empty-sub { font-size: 24rpx; color: #ccc; display: block; margin-top: 10rpx; }
+
+.confirm-box { background: #f8fbff; border: 2rpx solid #e6f0ff; border-radius: 12rpx; padding: 18rpx; margin-top: 12rpx; }
+.confirm-status { font-size: 24rpx; color: #555; margin-bottom: 10rpx; }
+.confirm-box button { margin: 8rpx 0; }

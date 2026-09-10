@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI陪诊 - 后台管理系统</title>
+  <title>AI社区服务 - 后台管理系统</title>
   <!-- Vue 2 + Element UI + axios + echarts (CDN) -->
   <link rel="stylesheet" href="https://unpkg.com/element-ui@2.15.14/lib/theme-chalk/index.css" crossorigin="anonymous" />
   <script src="https://unpkg.com/vue@2.7.16/dist/vue.min.js" crossorigin="anonymous"></script>
@@ -12,6 +12,14 @@
   <script src="https://unpkg.com/axios@1.7.7/dist/axios.min.js" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js" crossorigin="anonymous"></script>
   <style>
+/* 阶段23：社区管理员后台只读模式 */
+.readonly-admin .write-action { display:none !important; }
+.readonly-admin .el-input,
+.readonly-admin .el-select,
+.readonly-admin .el-date-editor,
+.readonly-admin .el-switch { pointer-events:none; opacity:.75; }
+.readonly-banner { margin:10px 20px 0; padding:9px 14px; border:1px solid #dcdfe6; border-radius:4px; background:#f5f7fa; color:#606266; font-size:13px; }
+</style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
     #app { display: flex; height: 100vh; }
@@ -34,11 +42,12 @@
   </style>
 </head>
 <body>
-<div id="app">
+<div id="app" :class="{'readonly-admin': isCommunityAdmin}">
+  <div v-if="isCommunityAdmin && isLoggedIn" class="readonly-banner">当前账号：社区管理员（只读）。仅可查看所属社区数据，所有新增、编辑、删除、审核、派单、退款、配置等操作均已禁止。</div>
   <!-- 登录页 -->
   <div v-if="!isLoggedIn" class="login-page">
     <div class="login-card">
-      <h2>AI陪诊 后台管理</h2>
+      <h2>AI社区服务 后台管理</h2>
       <el-form :model="loginForm" label-width="0">
         <el-form-item>
           <el-input v-model="loginForm.username" placeholder="管理员账号" prefix-icon="el-icon-user" @keyup.enter.native="handleLogin" />
@@ -56,7 +65,7 @@
   <!-- 主界面 -->
   <template v-else>
     <div class="sidebar">
-      <div class="sidebar-title">AI陪诊管理后台</div>
+      <div class="sidebar-title">AI社区服务管理后台</div>
       <el-menu :default-active="$route.path" router background-color="#304156" text-color="#bfcbd9" active-text-color="#409eff">
         <el-menu-item index="/dashboard"><i class="el-icon-s-data"></i><span>运营总览</span></el-menu-item>
         <el-menu-item index="/orders"><i class="el-icon-s-order"></i><span>订单管理</span></el-menu-item>
@@ -64,6 +73,8 @@
         <el-menu-item index="/community"><i class="el-icon-s-home"></i><span>社区与系统</span></el-menu-item>
         <el-menu-item index="/payment"><i class="el-icon-wallet"></i><span>支付管理</span></el-menu-item>
         <el-menu-item index="/icons"><i class="el-icon-picture-outline"></i><span>图标管理</span></el-menu-item>
+        <el-menu-item v-if="isSuperAdmin" index="/admins"><i class="el-icon-s-custom"></i><span>管理员管理</span></el-menu-item>
+        <el-menu-item v-if="isSuperAdmin" index="/security"><i class="el-icon-lock"></i><span>安全与操作日志</span></el-menu-item>
       </el-menu>
     </div>
     <div class="main">
@@ -180,9 +191,9 @@ const OrdersPage = {
         <el-table-column label="操作" min-width="260" fixed="right">
           <template slot-scope="{row}">
             <el-button size="mini" @click="viewDetail(row)">详情</el-button>
-            <el-button size="mini" type="warning" v-if="['dispatching','assigned'].includes(row.order_status)" @click="showDispatch(row)">人工派单</el-button>
-            <el-button size="mini" type="danger" v-if="['pending','dispatching','assigned'].includes(row.order_status)" @click="cancelOrder(row)">取消</el-button>
-            <el-button size="mini" type="info" v-if="row.payment_status==='SUCCESS'&&row.order_status!=='completed'" @click="refundOrder(row)">退款</el-button>
+            <el-button size="mini" type="warning" v-if="['dispatching','assigned'].includes(row.order_status)" class="write-action" @click="showDispatch(row)">人工派单</el-button>
+            <el-button size="mini" type="danger" v-if="['pending','dispatching','assigned'].includes(row.order_status)" class="write-action" @click="cancelOrder(row)">取消</el-button>
+            <el-button size="mini" type="info" v-if="row.payment_status==='SUCCESS'&&row.order_status!=='completed'" class="write-action" @click="refundOrder(row)">退款</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -202,7 +213,7 @@ const OrdersPage = {
       <el-dialog title="人工派单" :visible.sync="showDispatchDialog" width="400px">
         <p>订单：{{dispatchTarget&&dispatchTarget.order_no}}</p>
         <el-input v-model="dispatchEscortId" placeholder="输入陪诊员ID"/>
-        <span slot="footer"><el-button @click="showDispatchDialog=false">取消</el-button><el-button type="primary" :loading="dispatching" @click="doDispatch">确认派单</el-button></span>
+        <span slot="footer"><el-button @click="showDispatchDialog=false">取消</el-button><el-button type="primary" :loading="dispatching" class="write-action" @click="doDispatch">确认派单</el-button></span>
       </el-dialog>
     </div>`,
   data() {
@@ -243,7 +254,7 @@ const EscortsPage = {
     <div>
       <el-row :gutter="16" style="margin-bottom:16px">
         <el-col :span="6"><el-input v-model="searchPhone" placeholder="搜索手机号" clearable @clear="loadList" @keyup.enter.native="loadList"><el-button slot="append" icon="el-icon-search" @click="loadList"></el-button></el-input></el-col>
-        <el-col :span="14" style="text-align:right"><el-button type="primary" icon="el-icon-plus" @click="showCreate=true">新增陪诊员</el-button></el-col>
+        <el-col :span="14" style="text-align:right"><el-button type="primary" icon="el-icon-plus" class="write-action" @click="showCreate=true">新增陪诊员</el-button></el-col>
       </el-row>
       <el-table :data="list" border stripe v-loading="loading" style="width:100%">
         <el-table-column prop="id" label="ID" width="60"/>
@@ -257,8 +268,8 @@ const EscortsPage = {
         <el-table-column label="操作" min-width="200" fixed="right">
           <template slot-scope="{row}">
             <el-button size="mini" @click="viewDetail(row)">详情</el-button>
-            <el-button size="mini" type="success" @click="approve(row)">启用</el-button>
-            <el-button size="mini" type="danger" @click="disable(row)">禁用</el-button>
+            <el-button size="mini" type="success" class="write-action" @click="approve(row)">启用</el-button>
+            <el-button size="mini" type="danger" class="write-action" @click="disable(row)">禁用</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -270,7 +281,7 @@ const EscortsPage = {
           <el-form-item label="社区ID"><el-input-number v-model="form.communityId" :min="1"/></el-form-item>
           <el-form-item label="密码"><el-input v-model="form.password" placeholder="默认123456"/></el-form-item>
         </el-form>
-        <span slot="footer"><el-button @click="showCreate=false">取消</el-button><el-button type="primary" :loading="submitting" @click="create">确定</el-button></span>
+        <span slot="footer"><el-button @click="showCreate=false">取消</el-button><el-button type="primary" :loading="submitting" class="write-action" @click="create">确定</el-button></span>
       </el-dialog>
       <el-dialog title="陪诊员详情" :visible.sync="showDetail" width="500px">
         <el-descriptions :column="1" border v-if="detailData">
@@ -304,7 +315,7 @@ const CommunityPage = {
     <div>
       <el-tabs v-model="activeTab">
         <el-tab-pane label="社区管理" name="community">
-          <el-row style="margin-bottom:16px"><el-button type="primary" icon="el-icon-plus" @click="openCreate">新增社区</el-button></el-row>
+          <el-row style="margin-bottom:16px"><el-button type="primary" icon="el-icon-plus" class="write-action" @click="openCreate">新增社区</el-button></el-row>
           <el-table :data="communityList" border stripe v-loading="communityLoading">
             <el-table-column prop="id" label="ID" width="60"/>
             <el-table-column prop="name" label="名称" width="140"/>
@@ -313,7 +324,7 @@ const CommunityPage = {
             <el-table-column prop="manager_phone" label="电话" width="130"/>
             <el-table-column label="地址" min-width="200" show-overflow-tooltip><template slot-scope="{row}">{{[row.province,row.city,row.district,row.address].filter(Boolean).join('')||'-'}}</template></el-table-column>
             <el-table-column label="状态" width="80"><template slot-scope="{row}"><el-tag :type="row.status===1?'success':'danger'" size="small">{{row.status===1?'启用':'禁用'}}</el-tag></template></el-table-column>
-            <el-table-column label="操作" width="100"><template slot-scope="{row}"><el-button size="mini" @click="openEdit(row)">编辑</el-button></template></el-table-column>
+            <el-table-column label="操作" width="100"><template slot-scope="{row}"><el-button size="mini" class="write-action" @click="openEdit(row)">编辑</el-button></template></el-table-column>
           </el-table>
         </el-tab-pane>
         <el-tab-pane label="系统配置" name="config">
@@ -323,8 +334,8 @@ const CommunityPage = {
             <el-table-column prop="description" label="说明" min-width="200" show-overflow-tooltip/>
             <el-table-column label="操作" width="160">
               <template slot-scope="{row}">
-                <template v-if="editKey===row.config_key"><el-button size="mini" type="success" @click="saveConfig(row)">保存</el-button><el-button size="mini" @click="editKey=null">取消</el-button></template>
-                <el-button v-else size="mini" @click="editKey=row.config_key;editVal=row.config_value">编辑</el-button>
+                <template v-if="editKey===row.config_key"><el-button size="mini" type="success" class="write-action" @click="saveConfig(row)">保存</el-button><el-button size="mini" @click="editKey=null">取消</el-button></template>
+                <el-button v-else size="mini" class="write-action" @click="editKey=row.config_key;editVal=row.config_value">编辑</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -341,7 +352,7 @@ const CommunityPage = {
           <el-form-item label="区县"><el-input v-model="cForm.district"/></el-form-item>
           <el-form-item label="地址"><el-input v-model="cForm.address"/></el-form-item>
         </el-form>
-        <span slot="footer"><el-button @click="showDialog=false">取消</el-button><el-button type="primary" :loading="cSubmitting" @click="submitCommunity">确定</el-button></span>
+        <span slot="footer"><el-button @click="showDialog=false">取消</el-button><el-button type="primary" :loading="cSubmitting" class="write-action" @click="submitCommunity">确定</el-button></span>
       </el-dialog>
     </div>`,
   data() { return { activeTab:'community',communityList:[],communityLoading:false,configList:[],configLoading:false,showDialog:false,cSubmitting:false,cForm:{id:null,name:'',code:'',managerName:'',managerPhone:'',province:'',city:'',district:'',address:'',status:1},editKey:null,editVal:'' } },
@@ -413,10 +424,10 @@ const PaymentPage = {
           <el-table-column label="操作" width="180">
             <template slot-scope="scope">
               <template v-if="editingId===scope.row.id">
-                <el-button type="primary" size="mini" @click="saveCommunity(scope.row)">保存</el-button>
+                <el-button type="primary" size="mini" class="write-action" @click="saveCommunity(scope.row)">保存</el-button>
                 <el-button size="mini" @click="editingId=null">取消</el-button>
               </template>
-              <el-button v-else type="text" @click="startEdit(scope.row)">编辑</el-button>
+              <el-button v-else type="text" class="write-action" @click="startEdit(scope.row)">编辑</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -534,7 +545,7 @@ const IconsPage = {
               accept=".png,.jpg,.jpeg,.svg,.gif,.webp">
               <el-button size="mini" type="primary" icon="el-icon-upload2">上传替换</el-button>
             </el-upload>
-            <el-button size="mini" type="warning" v-if="row.file_path" @click="resetIcon(row)" style="margin-left:8px">恢复默认</el-button>
+            <el-button size="mini" type="warning" v-if="row.file_path" class="write-action" @click="resetIcon(row)" style="margin-left:8px">恢复默认</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -593,6 +604,115 @@ const IconsPage = {
   }
 }
 
+
+
+// ==================== 组件：管理员管理（仅超级管理员） ====================
+const AdminsPage = {
+  template: `
+    <div>
+      <el-row :gutter="12" style="margin-bottom:16px">
+        <el-col :span="6"><el-input v-model="keyword" clearable placeholder="账号/姓名" @keyup.enter.native="loadList" /></el-col>
+        <el-col :span="4"><el-select v-model="filterRole" clearable placeholder="角色"><el-option label="超级管理员" value="SUPER_ADMIN"/><el-option label="社区管理员" value="COMMUNITY_ADMIN"/></el-select></el-col>
+        <el-col :span="4"><el-select v-model="filterStatus" clearable placeholder="状态"><el-option label="启用" :value="1"/><el-option label="禁用" :value="0"/></el-select></el-col>
+        <el-col :span="4"><el-button type="primary" @click="loadList">查询</el-button></el-col>
+        <el-col :span="6" style="text-align:right"><el-button type="success" icon="el-icon-plus" class="write-action" @click="openCreate">新增管理员</el-button></el-col>
+      </el-row>
+      <el-table :data="list" border stripe v-loading="loading">
+        <el-table-column prop="id" label="ID" width="65"/>
+        <el-table-column prop="username" label="账号" width="150"/>
+        <el-table-column prop="real_name" label="姓名" width="120"/>
+        <el-table-column label="角色" width="130"><template slot-scope="{row}"><el-tag :type="row.role==='SUPER_ADMIN'?'danger':'primary'">{{row.role==='SUPER_ADMIN'?'超级管理员':'社区管理员'}}</el-tag></template></el-table-column>
+        <el-table-column prop="community_name" label="所属社区" min-width="150"><template slot-scope="{row}">{{row.role==='SUPER_ADMIN'?'全部社区':(row.community_name||'-')}}</template></el-table-column>
+        <el-table-column label="状态" width="90"><template slot-scope="{row}"><el-tag :type="row.status?'success':'info'">{{row.status?'启用':'禁用'}}</el-tag></template></el-table-column>
+        <el-table-column prop="last_login_at" label="最后登录" width="170"/>
+        <el-table-column label="操作" width="300" fixed="right">
+          <template slot-scope="{row}">
+            <el-button size="mini" class="write-action" @click="openEdit(row)">编辑</el-button>
+            <el-button size="mini" class="write-action" @click="resetPassword(row)">重置密码</el-button>
+            <el-button v-if="row.status" size="mini" type="warning" class="write-action" @click="changeStatus(row,0)">禁用</el-button>
+            <el-button v-else size="mini" type="success" class="write-action" @click="changeStatus(row,1)">启用</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div style="margin-top:16px;text-align:right"><el-pagination background layout="total, prev, pager, next" :current-page="page" :page-size="pageSize" :total="total" @current-change="changePage"/></div>
+
+      <el-dialog :title="form.id?'编辑管理员':'新增管理员'" :visible.sync="dialog" width="520px">
+        <el-form :model="form" label-width="100px">
+          <el-form-item v-if="!form.id" label="账号"><el-input v-model="form.username" placeholder="3-50位字母/数字/符号"/></el-form-item>
+          <el-form-item v-if="!form.id" label="初始密码"><el-input v-model="form.password" show-password/></el-form-item>
+          <el-form-item label="姓名"><el-input v-model="form.realName"/></el-form-item>
+          <el-form-item label="角色"><el-select v-model="form.role" style="width:100%"><el-option label="超级管理员" value="SUPER_ADMIN"/><el-option label="社区管理员" value="COMMUNITY_ADMIN"/></el-select></el-form-item>
+          <el-form-item v-if="form.role==='COMMUNITY_ADMIN'" label="所属社区"><el-select v-model="form.communityId" placeholder="请选择社区" style="width:100%"><el-option v-for="c in communities" :key="c.id" :label="c.name+'（ID '+c.id+'）'" :value="c.id"/></el-select></el-form-item>
+        </el-form>
+        <span slot="footer"><el-button @click="dialog=false">取消</el-button><el-button type="primary" :loading="saving" class="write-action" @click="save">保存</el-button></span>
+      </el-dialog>
+    </div>`,
+  data() { return { list:[], total:0, page:1, pageSize:20, keyword:'', filterRole:'', filterStatus:'', loading:false, saving:false, dialog:false, communities:[], form:{id:null,username:'',password:'',realName:'',role:'COMMUNITY_ADMIN',communityId:null} } },
+  mounted(){ this.loadCommunities(); this.loadList() },
+  methods:{
+    async loadList(){ this.loading=true; try{ const r=await axios.get(API_BASE+'/admins',{params:{page:this.page,pageSize:this.pageSize,keyword:this.keyword||undefined,role:this.filterRole||undefined,status:this.filterStatus===''?undefined:this.filterStatus}}); const d=r.data.data||{}; this.list=d.list||[]; this.total=d.total||0 }catch(e){this.$message.error(e.response?.data?.message||'加载失败')}finally{this.loading=false} },
+    async loadCommunities(){ try{ const r=await axios.get(API_BASE+'/communities'); this.communities=r.data.data||[] }catch(e){} },
+    changePage(p){this.page=p;this.loadList()},
+    openCreate(){this.form={id:null,username:'',password:'',realName:'',role:'COMMUNITY_ADMIN',communityId:null};this.dialog=true},
+    openEdit(row){this.form={id:row.id,username:row.username,password:'',realName:row.real_name||'',role:row.role,communityId:row.community_id||null};this.dialog=true},
+    async save(){ if(!this.form.role)return; if(this.form.role==='COMMUNITY_ADMIN'&&!this.form.communityId){this.$message.warning('社区管理员必须绑定社区');return} this.saving=true; try{ if(this.form.id){await axios.put(API_BASE+'/admins/update',{id:this.form.id,realName:this.form.realName,role:this.form.role,communityId:this.form.communityId})}else{await axios.post(API_BASE+'/admins/create',{username:this.form.username,password:this.form.password,realName:this.form.realName,role:this.form.role,communityId:this.form.communityId})} this.$message.success('保存成功');this.dialog=false;this.loadList()}catch(e){this.$message.error(e.response?.data?.message||'保存失败')}finally{this.saving=false} },
+    async changeStatus(row,status){ try{await this.$confirm(status?'确定启用该管理员？':'确定禁用该管理员？','提示',{type:status?'success':'warning'});await axios.post(API_BASE+'/admins/status',{id:row.id,status});this.$message.success('操作成功');this.loadList()}catch(e){if(e!=='cancel')this.$message.error(e.response?.data?.message||'操作失败')} },
+    async resetPassword(row){ try{const {value}=await this.$prompt('请输入新密码（至少6位）','重置密码',{inputType:'password',inputValidator:v=>v&&v.length>=6?'': '密码至少6位'});await axios.post(API_BASE+'/admins/reset-password',{id:row.id,password:value});this.$message.success('密码已重置')}catch(e){if(e!=='cancel')this.$message.error(e.response?.data?.message||'重置失败')} }
+  }
+}
+
+
+// ==================== 组件：安全与操作日志（仅超级管理员） ====================
+const SecurityPage = {
+  template: `
+    <div>
+      <el-row :gutter="12" style="margin-bottom:16px">
+        <el-col :span="4"><el-card shadow="never"><div class="stat-card"><div class="stat-label">管理员总数</div><div class="stat-value">{{stats.total}}</div></div></el-card></el-col>
+        <el-col :span="4"><el-card shadow="never"><div class="stat-card"><div class="stat-label">启用账号</div><div class="stat-value">{{stats.active}}</div></div></el-card></el-col>
+        <el-col :span="4"><el-card shadow="never"><div class="stat-card"><div class="stat-label">启用超级管理员</div><div class="stat-value">{{stats.activeSuper}}</div></div></el-card></el-col>
+        <el-col :span="4"><el-card shadow="never"><div class="stat-card"><div class="stat-label">社区管理员</div><div class="stat-value">{{stats.activeCommunity}}</div></div></el-card></el-col>
+        <el-col :span="4"><el-card shadow="never"><div class="stat-card"><div class="stat-label">24小时成功登录</div><div class="stat-value">{{stats.login24h}}</div></div></el-card></el-col>
+        <el-col :span="4"><el-card shadow="never"><div class="stat-card"><div class="stat-label">24小时失败登录</div><div class="stat-value" style="color:#f56c6c">{{stats.failedLogin24h}}</div></div></el-card></el-col>
+      </el-row>
+      <el-card shadow="never">
+        <div slot="header"><span>管理员操作审计日志</span><el-button style="float:right" size="mini" @click="loadAll">刷新</el-button></div>
+        <el-row :gutter="10" style="margin-bottom:14px">
+          <el-col :span="4"><el-input v-model="filters.keyword" clearable placeholder="账号/姓名" @keyup.enter.native="loadLogs"/></el-col>
+          <el-col :span="4"><el-select v-model="filters.module" clearable placeholder="模块" style="width:100%"><el-option v-for="m in modules" :key="m" :label="moduleLabel(m)" :value="m"/></el-select></el-col>
+          <el-col :span="4"><el-select v-model="filters.result" clearable placeholder="结果" style="width:100%"><el-option label="成功" value="success"/><el-option label="失败" value="failure"/></el-select></el-col>
+          <el-col :span="4"><el-date-picker v-model="filters.startDate" type="date" value-format="yyyy-MM-dd" placeholder="开始日期" style="width:100%"/></el-col>
+          <el-col :span="4"><el-date-picker v-model="filters.endDate" type="date" value-format="yyyy-MM-dd" placeholder="结束日期" style="width:100%"/></el-col>
+          <el-col :span="4"><el-button type="primary" @click="loadLogs">查询</el-button><el-button @click="reset">重置</el-button></el-col>
+        </el-row>
+        <el-table :data="list" border stripe v-loading="loading">
+          <el-table-column prop="created_at" label="时间" width="170"/>
+          <el-table-column label="管理员" width="170"><template slot-scope="{row}">{{row.real_name || row.username || ('ID '+row.admin_id)}}</template></el-table-column>
+          <el-table-column label="角色" width="130"><template slot-scope="{row}">{{row.role==='SUPER_ADMIN'?'超级管理员':row.role==='COMMUNITY_ADMIN'?'社区管理员':'-'}}</template></el-table-column>
+          <el-table-column prop="community_name" label="社区" width="150"/>
+          <el-table-column prop="module" label="模块" width="110"><template slot-scope="{row}">{{moduleLabel(row.module)}}</template></el-table-column>
+          <el-table-column prop="action" label="动作" width="140"/>
+          <el-table-column prop="request_method" label="方法" width="80"/>
+          <el-table-column prop="request_ip" label="IP" width="145"/>
+          <el-table-column label="结果" width="85"><template slot-scope="{row}"><el-tag :type="row.result==='success'?'success':'danger'">{{row.result==='success'?'成功':'失败'}}</el-tag></template></el-table-column>
+          <el-table-column label="详情" min-width="100"><template slot-scope="{row}"><el-button size="mini" @click="showDetail(row)">查看</el-button></template></el-table-column>
+        </el-table>
+        <div style="margin-top:16px;text-align:right"><el-pagination background layout="total, prev, pager, next" :current-page="page" :page-size="pageSize" :total="total" @current-change="changePage"/></div>
+      </el-card>
+      <el-dialog title="操作详情" :visible.sync="detailDialog" width="620px"><pre style="white-space:pre-wrap;word-break:break-all;max-height:480px;overflow:auto">{{detailText}}</pre></el-dialog>
+    </div>`,
+  data(){return {stats:{total:0,active:0,activeSuper:0,activeCommunity:0,login24h:0,failedLogin24h:0},list:[],total:0,page:1,pageSize:20,loading:false,detailDialog:false,detailText:'',modules:['auth','admin','user','escort','order','config','payment','icon','community','dispatch'],filters:{keyword:'',module:'',result:'',startDate:'',endDate:''}}},
+  methods:{
+    moduleLabel(m){return {auth:'登录认证',admin:'管理员',user:'用户',escort:'服务人员',order:'订单',config:'系统配置',payment:'支付',icon:'图标',community:'社区',dispatch:'派单'}[m]||m||'-'},
+    async loadStats(){try{const r=await axios.get(API_BASE+'/security/stats');this.stats=r.data.data||this.stats}catch(e){}},
+    async loadLogs(){this.loading=true;try{const r=await axios.get(API_BASE+'/operation-logs',{params:{page:this.page,pageSize:this.pageSize,...this.filters}});const d=r.data.data||{};this.list=d.list||[];this.total=d.total||0}catch(e){this.$message.error(e.response?.data?.message||'日志加载失败')}finally{this.loading=false}},
+    loadAll(){this.loadStats();this.loadLogs()},
+    changePage(p){this.page=p;this.loadLogs()},
+    reset(){this.page=1;this.filters={keyword:'',module:'',result:'',startDate:'',endDate:''};this.loadLogs()},
+    showDetail(row){this.detailText=JSON.stringify({管理员:row.username,姓名:row.real_name,模块:this.moduleLabel(row.module),动作:row.action,URL:row.request_url,IP:row.request_ip,结果:row.result,请求参数:row.request_body},null,2);this.detailDialog=true}
+  },
+  mounted(){this.loadAll()}
+}
+
 // ==================== Vue 路由 & 根实例 ====================
 const router = new VueRouter({
   routes: [
@@ -602,22 +722,37 @@ const router = new VueRouter({
     { path: '/escorts', component: EscortsPage },
     { path: '/community', component: CommunityPage },
     { path: '/payment', component: PaymentPage },
-    { path: '/icons', component: IconsPage }
+    { path: '/icons', component: IconsPage },
+    { path: '/admins', component: AdminsPage },
+    { path: '/security', component: SecurityPage }
   ]
 })
 
-const TITLE_MAP = { '/dashboard':'运营总览', '/orders':'订单管理', '/escorts':'陪诊员管理', '/community':'社区与系统管理', '/payment':'支付管理', '/icons':'图标管理' }
+const TITLE_MAP = { '/dashboard':'运营总览', '/orders':'订单管理', '/escorts':'陪诊员管理', '/community':'社区与系统管理', '/payment':'支付管理', '/icons':'图标管理', '/admins':'管理员管理', '/security':'安全与操作日志' }
+
+axios.interceptors.request.use(config => {
+  const method = String(config.method || 'get').toUpperCase();
+  const info = JSON.parse(localStorage.getItem('admin_info') || 'null');
+  if (['POST','PUT','PATCH','DELETE'].includes(method) && info && info.role === 'COMMUNITY_ADMIN') {
+    Vue.prototype.$message && Vue.prototype.$message.warning('社区管理员为只读账号，无权修改后台数据');
+    return Promise.reject(new Error('READ_ONLY_ADMIN'));
+  }
+  return config;
+});
 
 new Vue({
   el: '#app',
   router,
   data: {
     isLoggedIn: !!localStorage.getItem('admin_token'),
+    adminInfo: JSON.parse(localStorage.getItem('admin_info') || 'null'),
     loginForm: { username: 'admin', password: 'admin123' },
     loginLoading: false
   },
   computed: {
-    pageTitle() { return TITLE_MAP[this.$route.path] || '管理后台' }
+    pageTitle() { return TITLE_MAP[this.$route.path] || '管理后台' },
+    isSuperAdmin() { return this.adminInfo && this.adminInfo.role === 'SUPER_ADMIN' },
+    isCommunityAdmin() { return this.adminInfo && this.adminInfo.role === 'COMMUNITY_ADMIN' }
   },
   methods: {
     async handleLogin() {
@@ -626,6 +761,8 @@ new Vue({
         const res = await axios.post('/api/v1/admin/login', this.loginForm)
         if (res.data.code === 0) {
           localStorage.setItem('admin_token', res.data.data.token)
+          localStorage.setItem('admin_info', JSON.stringify(res.data.data.admin || null))
+          this.adminInfo = res.data.data.admin || null
           this.isLoggedIn = true
           this.$message.success('登录成功')
         } else {
@@ -639,6 +776,8 @@ new Vue({
     },
     handleLogout() {
       localStorage.removeItem('admin_token')
+      localStorage.removeItem('admin_info')
+      this.adminInfo = null
       this.isLoggedIn = false
       this.$message.success('已退出')
     }

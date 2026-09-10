@@ -23,6 +23,18 @@ Page({
     msgTotal: 0,
     unreadCount: 0,
 
+    // 服务类型映射：仅用于前端展示，不改变现有 API 或数据库字段
+    serviceTypeMap: {
+      medical_escort: { label: '就医陪诊', icon: '🏥' },
+      escort: { label: '就医陪诊', icon: '🏥' },
+      elderly_care: { label: '老人陪护', icon: '👴' },
+      child_care: { label: '儿童托管', icon: '🧒' },
+      pet_care: { label: '宠物托管', icon: '🐾' },
+      register: { label: '代办服务', icon: '📋' },
+      pickup: { label: '接送服务', icon: '🚗' },
+      planning: { label: '服务规划', icon: '📝' }
+    },
+
     // 状态映射
     statusMap: {
       pending: '待支付',
@@ -41,7 +53,8 @@ Page({
     // 订单详情弹窗
     showDetail: false,
     orderDetail: null,
-    detailLoading: false
+    detailLoading: false,
+    orderTimeline: []
   },
 
   onShow() {
@@ -95,7 +108,12 @@ Page({
       }
 
       const result = await app.request({ url: '/order/list', data: params })
-      const list = result.list || []
+      const rawList = result.list || []
+      const list = await Promise.all(rawList.map(async order => {
+        const normalized = this.normalizeOrder(order)
+        try { const r = await app.request({ url: "/rating/detail", data: { orderId: order.id } }); normalized.hasRated = !!r.hasRated } catch (e) { normalized.hasRated = false }
+        return normalized
+      }))
       const total = result.total || 0
 
       this.setData({
@@ -108,6 +126,21 @@ Page({
     } catch (e) {
       this.setData({ orderLoading: false })
       console.error('loadOrders error', e)
+    }
+  },
+
+  // 统一订单展示字段，兼容旧陪诊订单与新的家庭服务订单
+  normalizeOrder(order) {
+    const service = this.data.serviceTypeMap[order.service_type] || this.data.serviceTypeMap[order.serviceType] || { label: order.service_type || order.serviceType || '家庭服务', icon: '🏠' }
+    const patient = order.patientName || order.patient_name || order.patient || ''
+    const address = order.addressText || order.address_text || order.detailAddress || ''
+    return {
+      ...order,
+      serviceLabel: service.label,
+      serviceIcon: service.icon,
+      serviceObjectLabel: order.serviceObjectLabel || order.object_label || '服务对象',
+      serviceObjectName: order.serviceObjectName || order.object_name || patient || '未填写',
+      serviceLocation: order.serviceLocation || order.location || address || '待确认'
     }
   },
 
@@ -132,18 +165,28 @@ Page({
   // ========== 订单详情 ==========
   async viewOrderDetail(e) {
     const orderId = e.currentTarget.dataset.id
-    this.setData({ showDetail: true, detailLoading: true, orderDetail: null })
+    this.setData({ showDetail: true, detailLoading: true, orderDetail: null, orderTimeline: [] })
 
     try {
       const detail = await app.request({ url: '/order/detail', data: { orderId } })
-      this.setData({ orderDetail: detail, detailLoading: false })
+      const normalized = this.normalizeOrder(detail)
+      try { const rating = await app.request({ url: "/rating/detail", data: { orderId } }); normalized.hasRated = !!rating.hasRated; normalized.rating = rating.rating } catch (e) { normalized.hasRated = false }
+      let orderTimeline = []
+      try { const timeline = await app.request({ url: '/order/timeline', data: { orderId } }); orderTimeline = timeline.timeline || [] } catch (e) { console.error('timeline error', e) }
+      this.setData({ orderDetail: normalized, orderTimeline, detailLoading: false })
     } catch (e) {
       this.setData({ showDetail: false, detailLoading: false })
     }
   },
 
   closeDetail() {
-    this.setData({ showDetail: false, orderDetail: null })
+    this.setData({ showDetail: false, orderDetail: null, orderTimeline: [] })
+  },
+
+  // ========== 服务评价 ==========
+  rateOrder(e) {
+    const orderId = e.currentTarget.dataset.id
+    wx.navigateTo({ url: `/pages/rating/rating?orderId=${orderId}` })
   },
 
   // ========== 订单操作 ==========

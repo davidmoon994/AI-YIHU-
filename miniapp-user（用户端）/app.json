@@ -3,10 +3,12 @@
     "pages/index/index",
     "pages/ai/ai",
     "pages/service/service",
-    "pages/mine/mine"
+    "pages/service-detail/service-detail",
+    "pages/mine/mine",
+    "pages/rating/rating"
   ],
   "window": {
-    "navigationBarTitleText": "AI陪诊",
+    "navigationBarTitleText": "AI家庭服务",
     "navigationBarBackgroundColor": "#1677ff",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#f6f7fb"
@@ -17,10 +19,22 @@
     "selectedColor": "#1677ff",
     "backgroundColor": "#fff",
     "list": [
-      { "pagePath": "pages/index/index", "text": "首页" },
-      { "pagePath": "pages/ai/ai", "text": "AI问诊" },
-      { "pagePath": "pages/service/service", "text": "服务" },
-      { "pagePath": "pages/mine/mine", "text": "我的" }
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/ai/ai",
+        "text": "AI问诊"
+      },
+      {
+        "pagePath": "pages/service/service",
+        "text": "服务"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的"
+      }
     ]
   },
   "sitemapLocation": "sitemap.json"

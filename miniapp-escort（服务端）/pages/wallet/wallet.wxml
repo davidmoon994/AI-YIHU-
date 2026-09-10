@@ -1,0 +1,67 @@
+<view class="page">
+
+  <!-- 总收入卡片 -->
+  <view class="income-card">
+    <text class="income-label">累计总收入</text>
+    <text class="income-amount">¥{{totalIncome}}</text>
+    <view class="income-meta">
+      <text>累计完成 {{orderCount}} 单</text>
+    </view>
+  </view>
+
+  <!-- 筛选区间 -->
+  <view class="filter-card">
+    <text class="filter-title">收入查询</text>
+    <view class="filter-row">
+      <picker mode="date" value="{{startDate}}" bindchange="onStartDateChange">
+        <view class="date-picker">开始：{{startDate}}</view>
+      </picker>
+      <picker mode="date" value="{{endDate}}" bindchange="onEndDateChange">
+        <view class="date-picker">结束：{{endDate}}</view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- 区间结算统计 -->
+  <view class="stat-card">
+    <view class="stat-row">
+      <text class="stat-label">区间完成订单</text>
+      <text class="stat-value">{{monthOrderCount}} 单</text>
+    </view>
+    <view class="stat-row">
+      <text class="stat-label">订单实付</text>
+      <text class="stat-value">¥{{grossIncome}}</text>
+    </view>
+    <view class="stat-row">
+      <text class="stat-label">平台服务费</text>
+      <text class="stat-value">-¥{{platformFee}}</text>
+    </view>
+    <view class="stat-row">
+      <text class="stat-label">应结算收入</text>
+      <text class="stat-value highlight">¥{{monthIncome}}</text>
+    </view>
+  </view>
+
+  <view class="stat-card" wx:if="{{settlementList.length}}">
+    <text class="filter-title">最近结算明细</text>
+    <view class="settlement-item" wx:for="{{settlementList}}" wx:key="id">
+      <view>
+        <text class="settlement-order">{{item.order_no}}</text>
+        <text class="settlement-meta">订单 ¥{{item.gross_amount}} · 平台费 ¥{{item.platform_fee}}</text>
+      </view>
+      <view class="settlement-right">
+        <text class="settlement-amount">¥{{item.escort_amount}}</text>
+        <text class="settlement-status">{{item.settlement_status === 'SETTLED' ? '已结算' : '待结算'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 提示 -->
+  <view class="tip-card">
+    <text class="tip-title">收入说明</text>
+    <text class="tip-text">• 收入在完成服务后自动计入</text>
+    <text class="tip-text">• 实际到账金额以平台结算为准</text>
+    <text class="tip-text">• 如有疑问请联系平台客服</text>
+  </view>
+
+</view>

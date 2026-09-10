@@ -55,6 +55,12 @@ const RESPONSE_STATUS = Object.freeze({
 
 // 服务类型
 const SERVICE_TYPE = Object.freeze({
+  // 新版家庭服务（主业务）
+  MEDICAL_ESCORT: "medical_escort",
+  ELDERLY_CARE: "elderly_care",
+  CHILD_CARE: "child_care",
+  PET_CARE: "pet_care",
+  // 兼容历史订单与旧客户端
   ESCORT: "escort",
   REGISTER: "register",
   PICKUP: "pickup",

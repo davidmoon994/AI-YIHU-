@@ -5,12 +5,12 @@ Page({
     isLogin: false,
     profile: null,
 
-    // 快捷入口
+    // 家庭服务入口
     serviceEntries: [
-      { type: 'escort', icon: '🏥', label: '陪诊服务', desc: '专人陪同就医' },
-      { type: 'register', icon: '📋', label: '代挂号', desc: '专家号代办' },
-      { type: 'pickup', icon: '🚗', label: '接送服务', desc: '就医接送' },
-      { type: 'planning', icon: '📝', label: '就医规划', desc: 'AI定制方案' }
+      { type: 'medical_escort', icon: '🏥', label: '就医陪诊', desc: '专业人员陪同就医' },
+      { type: 'elderly_care', icon: '👴', label: '老人陪护', desc: '陪伴照护更安心' },
+      { type: 'child_care', icon: '🧒', label: '儿童托管', desc: '专业看护更放心' },
+      { type: 'pet_care', icon: '🐾', label: '宠物托管', desc: '贴心照料您的爱宠' }
     ],
 
     // 近期订单
@@ -97,8 +97,8 @@ Page({
 
   // 跳转服务页 - 预设服务类型
   goService(e) {
-    const type = e.currentTarget.dataset.type || 'escort'
-    wx.switchTab({ url: '/pages/service/service' })
+    const type = e.currentTarget.dataset.type || 'medical_escort'
+    wx.navigateTo({ url: '/pages/service-detail/service-detail?type=' + encodeURIComponent(type) })
   },
 
   // 跳转AI问诊

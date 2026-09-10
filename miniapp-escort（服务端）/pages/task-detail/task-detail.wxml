@@ -1,0 +1,28 @@
+<view class="page" wx:if="{{!loading && order}}">
+  <view class="hero"><text class="hero-icon">{{order.serviceIcon}}</text><view><text class="hero-title">{{order.serviceLabel}}</text><text class="hero-no">订单号：{{order.order_no}}</text></view></view>
+  <view class="card">
+    <view class="card-title">服务进度</view>
+    <view class="steps"><block wx:for="{{flowSteps}}" wx:key="index"><view class="step {{index <= activeIndex ? 'active' : ''}}"><view class="dot"></view><text>{{item}}</text></view></block></view>
+  </view>
+  <view class="card">
+    <view class="card-title">服务对象</view>
+    <view class="row"><text class="label">姓名</text><text class="value">{{order.objectName}}</text></view>
+    <view class="row" wx:if="{{order.objectPhone}}"><text class="label">联系电话</text><text class="value">{{order.objectPhone}}</text></view>
+  </view>
+  <view class="card">
+    <view class="card-title">服务安排</view>
+    <view class="row"><text class="label">服务时间</text><text class="value">{{order.appointment_time || '待定'}}</text></view>
+    <view class="row"><text class="label">服务地点</text><text class="value">{{order.locationText}}</text></view>
+    <view class="row"><text class="label">订单金额</text><text class="value money">¥{{order.payable_amount}}</text></view>
+  </view>
+  <view class="card" wx:if="{{fields.length}}">
+    <view class="card-title">专业服务要求</view>
+    <view class="row" wx:for="{{fields}}" wx:key="label"><text class="label">{{item.label}}</text><text class="value multiline">{{item.value}}</text></view>
+  </view>
+  <view class="card" wx:if="{{userRemark}}">
+    <view class="card-title">用户备注</view><text class="remark">{{userRemark}}</text>
+  </view>
+  <view class="notice">请在服务前再次核对服务对象、时间、地点及专业要求；如信息存在异常，请联系平台客服后再开始服务。</view>
+</view>
+<view class="loading" wx:if="{{loading}}">正在加载订单详情…</view>
+<view class="empty" wx:if="{{!loading && !order}}">订单不存在或已无权查看</view>
